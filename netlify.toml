@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build:prod"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Redirection pour le routage SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

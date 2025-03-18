@@ -1,0 +1,52 @@
+{
+    "git.ignoreLimitWarning": true,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "**/node_modules": true,
+        "**/.firebase": true,
+        "**/dist": true,
+        "**/build": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.firebase": true
+    },
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/**": true,
+        "**/.firebase/**": true,
+        "**/dist/**": true,
+        "**/build/**": true
+    },
+    "workbench.colorTheme": "Default Dark+",
+    "workbench.preferredDarkColorTheme": "Default Dark+",
+    "window.autoDetectColorScheme": true,
+    "workbench.colorCustomizations": {
+        "[Default Dark+]": {
+            "editor.background": "#1E1E1E",
+            "sideBar.background": "#252526",
+            "activityBar.background": "#333333",
+            "terminal.background": "#1E1E1E",
+            "panel.background": "#1E1E1E"
+        }
+    },
+    "editor.tokenColorCustomizations": {
+        "[Default Dark+]": {
+            "comments": "#6A9955",
+            "strings": "#CE9178",
+            "keywords": "#569CD6",
+            "functions": "#DCDCAA",
+            "variables": "#9CDCFE"
+        }
+    }
+}

@@ -1,0 +1,2407 @@
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { db } from '../firebase';
+import { collection, query, where, getDocs, onSnapshot, Timestamp, updateDoc, doc, getDoc } from 
+'firebase/firestore';
+import { MapContainer, TileLayer, Marker, Popup, LayerGroup, LayersControl, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { geocodeAddress } from '../utils/geocoding';
+import './MapView.css';
+import 'leaflet.markercluster';
+import './MarkerCluster.css';
+import './MarkerCluster.Default.css';
+import { MarkerPreference } from '../types';
+// Renommer les imports pour Ã©viter les conflits avec les interfaces locales
+// import { Site, Tournee, MarkerPreference } from '../types';
+
+// Fix pour les icÃ´nes Leaflet
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Correction pour les icÃ´nes Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// DÃ©finir des icÃ´nes spÃ©cifiques
+const siteIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const departIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const arrivalIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// DÃ©finir des icÃ´nes spÃ©cifiques pour chaque type de site
+const laboratoireIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-laboratoire'
+});
+
+const cliniqueIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-clinique'
+});
+
+const plateauIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-plateau'
+});
+
+const collecteIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-collecte'
+});
+
+const etablissementIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-etablissement'
+});
+
+const ehpadIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-ehpad'
+});
+
+const veterinaireIcon = L.icon({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+  className: 'site-icon site-icon-veterinaire'
+});
+
+// Types de sites disponibles
+const SITE_TYPES = [
+  'Laboratoire',
+  'Clinique',
+  'Plateau technique',
+  'Point de collecte',
+  'Etablissement de santÃ©',
+  'Ehpad',
+  'VÃ©tÃ©rinaire'
+];
+
+// PÃ´les disponibles
+const POLES = [
+  'Nord',
+  'Sud',
+  'Est',
+  'Ouest',
+  'Centre'
+];
+
+// Fonction pour normaliser les types de sites
+const normalizeType = (type: string | undefined): string => {
+  if (!type) return '';
+  
+  const normalized = type.toLowerCase().trim();
+  
+  // Normaliser les types courants
+  if (normalized.includes('labo')) return 'laboratoire';
+  if (normalized.includes('plateau')) return 'plateau technique';
+  if (normalized.includes('clinique')) return 'clinique';
+  if (normalized.includes('collect')) return 'point de collecte';
+  if (normalized.includes('etablissement') || normalized.includes('Ã©tablissement')) return 'etablissement 
+de santÃ©';
+  if (normalized.includes('ehpad')) return 'ehpad';
+  if (normalized.includes('veterinaire') || normalized.includes('vÃ©tÃ©rinaire')) return 'veterinaire';
+  
+  return normalized;
+};
+
+// Fonction pour obtenir l'icÃ´ne par dÃ©faut en fonction du type de site
+const getDefaultIconForSiteType = (type: string | undefined): L.Icon => {
+  if (!type) return siteIcon;
+  
+  // Normaliser le type pour la comparaison
+  const normalizedType = normalizeType(type);
+  
+  // Retourner l'icÃ´ne correspondante
+  if (normalizedType === 'laboratoire') {
+    return laboratoireIcon;
+  } else if (normalizedType === 'clinique') {
+    return cliniqueIcon;
+  } else if (normalizedType === 'plateau technique') {
+    return plateauIcon;
+  } else if (normalizedType === 'point de collecte') {
+    return collecteIcon;
+  } else if (normalizedType === 'etablissement de santÃ©') {
+    return etablissementIcon;
+  } else if (normalizedType === 'ehpad') {
+    return ehpadIcon;
+  } else if (normalizedType === 'veterinaire') {
+    return veterinaireIcon;
+  }
+  
+  // Par dÃ©faut, retourner l'icÃ´ne gÃ©nÃ©rique
+  return siteIcon;
+};
+
+interface CourierLocation {
+  id: string;
+  nom: string;
+  tourneeId: string;
+  tourneeName: string;
+  siteId: string;
+  siteName: string;
+  latitude: number;
+  longitude: number;
+  lastScan: Timestamp;
+  isArrival: boolean; // Indique si le coursier est Ã  l'arrivÃ©e ou au dÃ©part
+}
+
+interface Site {
+  id: string;
+  nom: string;
+  adresse: string;
+  ville?: string;
+  codePostal?: string;
+  codeBarres: string;
+  latitude?: number;
+  longitude?: number;
+  type?: string;
+  pole?: string;
+}
+
+interface Tournee {
+  id: string;
+  nom: string;
+}
+
+// Composant pour ajouter le contrÃ´le plein Ã©cran personnalisÃ©
+const FullscreenControl: React.FC = () => {
+  const map = useMap();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  useEffect(() => {
+    // CrÃ©er un contrÃ´le personnalisÃ©
+    const FullscreenControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+        const button = L.DomUtil.create('a', 'leaflet-control-fullscreen', container);
+        
+        button.innerHTML = 'â¤¢';
+        button.href = '#';
+        button.title = 'Afficher en plein Ã©cran';
+        button.setAttribute('role', 'button');
+        button.setAttribute('aria-label', 'Afficher en plein Ã©cran');
+        
+        L.DomEvent.on(button, 'click', function(e) {
+          L.DomEvent.preventDefault(e);
+          
+          const mapContainer = map.getContainer();
+          
+          if (!document.fullscreenElement) {
+            if (mapContainer.requestFullscreen) {
+              mapContainer.requestFullscreen();
+              button.innerHTML = 'â¤“';
+              button.title = 'Quitter le plein Ã©cran';
+              setIsFullscreen(true);
+            }
+          } else {
+            if (document.exitFullscreen) {
+              document.exitFullscreen();
+              button.innerHTML = 'â¤¢';
+              button.title = 'Afficher en plein Ã©cran';
+              setIsFullscreen(false);
+            }
+          }
+        });
+        
+        // Ã‰couter les changements d'Ã©tat du plein Ã©cran
+        const handleFullscreenChange = () => {
+          if (!document.fullscreenElement && isFullscreen) {
+            button.innerHTML = 'â¤¢';
+            button.title = 'Afficher en plein Ã©cran';
+            setIsFullscreen(false);
+          }
+        };
+        
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        
+        return container;
+      }
+    });
+    
+    // Ajouter le contrÃ´le Ã  la carte
+    const fullscreenControl = new FullscreenControl();
+    map.addControl(fullscreenControl);
+    
+    return () => {
+      map.removeControl(fullscreenControl);
+      document.removeEventListener('fullscreenchange', () => {});
+    };
+  }, [map, isFullscreen]);
+  
+  return null;
+};
+
+// Composant pour afficher tous les sites
+const AllSitesLayer: React.FC<{
+  sites: Site[];
+  icon: L.Icon;
+  getIconForSiteType: (type: string) => L.Icon;
+  showLabels: boolean;
+  showGeneratedCoordinates: boolean;
+}> = ({ sites, icon, getIconForSiteType, showLabels, showGeneratedCoordinates }) => {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  useEffect(() => {
+    // CrÃ©er un nouveau LayerGroup si nÃ©cessaire
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup();
+      
+      // Ajouter le LayerGroup Ã  la carte si la couche est visible
+      if (isVisible) {
+        layerRef.current.addTo(map);
+      }
+    } else {
+      // Sinon, vider le LayerGroup existant
+      layerRef.current.clearLayers();
+      
+      // Ajouter ou retirer le LayerGroup de la carte selon la visibilitÃ©
+      if (isVisible && !map.hasLayer(layerRef.current)) {
+        map.addLayer(layerRef.current);
+      } else if (!isVisible && map.hasLayer(layerRef.current)) {
+        map.removeLayer(layerRef.current);
+      }
+    }
+    
+    // Ajouter les marqueurs au LayerGroup seulement si la couche est visible
+    if (isVisible) {
+      sites.forEach(site => {
+        // VÃ©rifier si les coordonnÃ©es sont gÃ©nÃ©rÃ©es
+        const isGeneratedCoords = site.hasOwnProperty('isGeneratedCoordinates') && 
+                                (site as any).isGeneratedCoordinates === true;
+        
+        if (!showGeneratedCoordinates && isGeneratedCoords) {
+          return;
+        }
+        
+        if (site.latitude && site.longitude) {
+          const siteIcon = getIconForSiteType(site.type || '');
+          const marker = L.marker([site.latitude, site.longitude], { icon: siteIcon })
+            .bindPopup(`
+              <div class="site-popup">
+                <h3>${site.nom}</h3>
+                <p><strong>Type:</strong> ${site.type}</p>
+                <p><strong>Adresse:</strong> ${site.adresse}</p>
+                <p><strong>PÃ´le:</strong> ${site.pole || 'Non dÃ©fini'}</p>
+                ${isGeneratedCoords ? '<p class="warning">CoordonnÃ©es gÃ©nÃ©rÃ©es automatiquement</p>' : 
+''}
+              </div>
+            `);
+          
+          if (showLabels) {
+            marker.bindTooltip(site.nom, { permanent: true, direction: 'top', className: 'site-label' });
+          }
+          
+          layerRef.current?.addLayer(marker);
+        }
+      });
+    }
+    
+    // Nettoyer le LayerGroup lors du dÃ©montage du composant
+    return () => {
+      if (layerRef.current) {
+        if (map.hasLayer(layerRef.current)) {
+          map.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      }
+    };
+  }, [sites, icon, getIconForSiteType, showLabels, showGeneratedCoordinates, map, isVisible]);
+  
+  // GÃ©rer l'affichage/masquage de la couche en fonction du contrÃ´le des couches
+  useEffect(() => {
+    const handleLayerControlChange = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === 'Tous les sites') {
+            // Mettre Ã  jour l'Ã©tat de visibilitÃ© en fonction de la case Ã  cocher
+            setIsVisible((checkbox as HTMLInputElement).checked);
+            
+            // Ajouter un Ã©couteur d'Ã©vÃ©nements pour les changements futurs
+            (checkbox as HTMLInputElement).addEventListener('change', (e) => {
+              const isChecked = (e.target as HTMLInputElement).checked;
+              setIsVisible(isChecked);
+            });
+          }
+        });
+      }
+    };
+    
+    // Attendre que le contrÃ´le des couches soit ajoutÃ  la carte
+    const checkLayersControl = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        handleLayerControlChange();
+      } else {
+        // Si le contrÃ´le n'est pas encore disponible, rÃ©essayer plus tard
+        setTimeout(checkLayersControl, 100);
+      }
+    };
+    
+    checkLayersControl();
+    
+    // Nettoyer les Ã©couteurs d'Ã©vÃ©nements lors du dÃ©montage du composant
+    return () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === 'Tous les sites') {
+            (checkbox as HTMLInputElement).removeEventListener('change', () => {});
+          }
+        });
+      }
+    };
+  }, [map]);
+  
+  return null;
+};
+
+// Composant pour afficher les sites par type
+const SiteTypeLayer: React.FC<{
+  sites: Site[];
+  icon: L.Icon;
+  type: string;
+  getIconForSiteType: (type: string) => L.Icon;
+  showLabels: boolean;
+  showGeneratedCoordinates: boolean;
+}> = ({ sites, icon, type, getIconForSiteType, showLabels, showGeneratedCoordinates }) => {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  useEffect(() => {
+    // CrÃ©er un nouveau LayerGroup si nÃ©cessaire
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup();
+      
+      // Ajouter le LayerGroup Ã  la carte si la couche est visible
+      if (isVisible) {
+        layerRef.current.addTo(map);
+      }
+    } else {
+      // Sinon, vider le LayerGroup existant
+      layerRef.current.clearLayers();
+      
+      // Ajouter ou retirer le LayerGroup de la carte selon la visibilitÃ©
+      if (isVisible && !map.hasLayer(layerRef.current)) {
+        map.addLayer(layerRef.current);
+      } else if (!isVisible && map.hasLayer(layerRef.current)) {
+        map.removeLayer(layerRef.current);
+      }
+    }
+    
+    // Ajouter les marqueurs au LayerGroup seulement si la couche est visible
+    if (isVisible) {
+      // Filtrer les sites par type et ajouter les marqueurs au LayerGroup
+      const filteredSites = sites.filter(site => normalizeType(site.type || '') === normalizeType(type));
+      
+      filteredSites.forEach(site => {
+        // VÃ©rifier si les coordonnÃ©es sont gÃ©nÃ©rÃ©es
+        const isGeneratedCoords = site.hasOwnProperty('isGeneratedCoordinates') && 
+                                (site as any).isGeneratedCoordinates === true;
+        
+        if (!showGeneratedCoordinates && isGeneratedCoords) {
+          return;
+        }
+        
+        if (site.latitude && site.longitude) {
+          const siteIcon = getIconForSiteType(site.type || '');
+          const marker = L.marker([site.latitude, site.longitude], { icon: siteIcon })
+            .bindPopup(`
+              <div class="site-popup">
+                <h3>${site.nom}</h3>
+                <p><strong>Type:</strong> ${site.type}</p>
+                <p><strong>Adresse:</strong> ${site.adresse}</p>
+                <p><strong>PÃ´le:</strong> ${site.pole || 'Non dÃ©fini'}</p>
+                ${isGeneratedCoords ? '<p class="warning">CoordonnÃ©es gÃ©nÃ©rÃ©es automatiquement</p>' : 
+''}
+              </div>
+            `);
+          
+          if (showLabels) {
+            marker.bindTooltip(site.nom, { permanent: true, direction: 'top', className: 'site-label' });
+          }
+          
+          layerRef.current?.addLayer(marker);
+        }
+      });
+    }
+    
+    // Nettoyer le LayerGroup lors du dÃ©montage du composant
+    return () => {
+      if (layerRef.current) {
+        if (map.hasLayer(layerRef.current)) {
+          map.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      }
+    };
+  }, [sites, icon, type, getIconForSiteType, showLabels, showGeneratedCoordinates, map, isVisible]);
+  
+  // GÃ©rer l'affichage/masquage de la couche en fonction du contrÃ´le des couches
+  useEffect(() => {
+    const handleLayerControlChange = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === type) {
+            // Mettre Ã  jour l'Ã©tat de visibilitÃ© en fonction de la case Ã  cocher
+            setIsVisible((checkbox as HTMLInputElement).checked);
+            
+            // Ajouter un Ã©couteur d'Ã©vÃ©nements pour les changements futurs
+            (checkbox as HTMLInputElement).addEventListener('change', (e) => {
+              const isChecked = (e.target as HTMLInputElement).checked;
+              setIsVisible(isChecked);
+            });
+          }
+        });
+      }
+    };
+    
+    // Attendre que le contrÃ´le des couches soit ajoutÃ  la carte
+    const checkLayersControl = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        handleLayerControlChange();
+      } else {
+        // Si le contrÃ´le n'est pas encore disponible, rÃ©essayer plus tard
+        setTimeout(checkLayersControl, 100);
+      }
+    };
+    
+    checkLayersControl();
+    
+    // Nettoyer les Ã©couteurs d'Ã©vÃ©nements lors du dÃ©montage du composant
+    return () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === type) {
+            (checkbox as HTMLInputElement).removeEventListener('change', () => {});
+          }
+        });
+      }
+    };
+  }, [map, type]);
+  
+  return null;
+};
+
+// Composant pour afficher les sites par pÃ´le
+const PoleLayer: React.FC<{
+  sites: Site[];
+  icon: L.Icon;
+  pole: string;
+  getIconForSiteType: (type: string) => L.Icon;
+  showLabels: boolean;
+  showGeneratedCoordinates: boolean;
+}> = ({ sites, icon, pole, getIconForSiteType, showLabels, showGeneratedCoordinates }) => {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  useEffect(() => {
+    // CrÃ©er un nouveau LayerGroup si nÃ©cessaire
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup();
+      
+      // Ajouter le LayerGroup Ã  la carte si la couche est visible
+      if (isVisible) {
+        layerRef.current.addTo(map);
+      }
+    } else {
+      // Sinon, vider le LayerGroup existant
+      layerRef.current.clearLayers();
+      
+      // Ajouter ou retirer le LayerGroup de la carte selon la visibilitÃ©
+      if (isVisible && !map.hasLayer(layerRef.current)) {
+        map.addLayer(layerRef.current);
+      } else if (!isVisible && map.hasLayer(layerRef.current)) {
+        map.removeLayer(layerRef.current);
+      }
+    }
+    
+    // Ajouter les marqueurs au LayerGroup seulement si la couche est visible
+    if (isVisible) {
+      // Filtrer les sites par pÃ´le et ajouter les marqueurs au LayerGroup
+      const filteredSites = sites.filter(site => site.pole === pole);
+      
+      filteredSites.forEach(site => {
+        // VÃ©rifier si les coordonnÃ©es sont gÃ©nÃ©rÃ©es
+        const isGeneratedCoords = site.hasOwnProperty('isGeneratedCoordinates') && 
+                                (site as any).isGeneratedCoordinates === true;
+        
+        if (!showGeneratedCoordinates && isGeneratedCoords) {
+          return;
+        }
+        
+        if (site.latitude && site.longitude) {
+          const siteIcon = getIconForSiteType(site.type || '');
+          const marker = L.marker([site.latitude, site.longitude], { icon: siteIcon })
+            .bindPopup(`
+              <div class="site-popup">
+                <h3>${site.nom}</h3>
+                <p><strong>Type:</strong> ${site.type}</p>
+                <p><strong>Adresse:</strong> ${site.adresse}</p>
+                <p><strong>PÃ´le:</strong> ${site.pole || 'Non dÃ©fini'}</p>
+                ${isGeneratedCoords ? '<p class="warning">CoordonnÃ©es gÃ©nÃ©rÃ©es automatiquement</p>' : 
+''}
+              </div>
+            `);
+          
+          if (showLabels) {
+            marker.bindTooltip(site.nom, { permanent: true, direction: 'top', className: 'site-label' });
+          }
+          
+          layerRef.current?.addLayer(marker);
+        }
+      });
+    }
+    
+    // Nettoyer le LayerGroup lors du dÃ©montage du composant
+    return () => {
+      if (layerRef.current) {
+        if (map.hasLayer(layerRef.current)) {
+          map.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      }
+    };
+  }, [sites, icon, pole, getIconForSiteType, showLabels, showGeneratedCoordinates, map, isVisible]);
+  
+  // GÃ©rer l'affichage/masquage de la couche en fonction du contrÃ´le des couches
+  useEffect(() => {
+    const handleLayerControlChange = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === `PÃ´le ${pole}`) {
+            // Mettre Ã  jour l'Ã©tat de visibilitÃ© en fonction de la case Ã  cocher
+            setIsVisible((checkbox as HTMLInputElement).checked);
+            
+            // Ajouter un Ã©couteur d'Ã©vÃ©nements pour les changements futurs
+            (checkbox as HTMLInputElement).addEventListener('change', (e) => {
+              const isChecked = (e.target as HTMLInputElement).checked;
+              setIsVisible(isChecked);
+            });
+          }
+        });
+      }
+    };
+    
+    // Attendre que le contrÃ´le des couches soit ajoutÃ  la carte
+    const checkLayersControl = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        handleLayerControlChange();
+      } else {
+        // Si le contrÃ´le n'est pas encore disponible, rÃ©essayer plus tard
+        setTimeout(checkLayersControl, 100);
+      }
+    };
+    
+    checkLayersControl();
+    
+    // Nettoyer les Ã©couteurs d'Ã©vÃ©nements lors du dÃ©montage du composant
+    return () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === `PÃ´le ${pole}`) {
+            (checkbox as HTMLInputElement).removeEventListener('change', () => {});
+          }
+        });
+      }
+    };
+  }, [map, pole]);
+  
+  return null;
+};
+
+// Composant pour afficher les coursiers
+const CouriersLayer: React.FC<{
+  courierLocations: CourierLocation[];
+  departIcon: L.Icon;
+  arrivalIcon: L.Icon;
+  formatDate: (date: any) => string;
+}> = ({ courierLocations, departIcon, arrivalIcon, formatDate }) => {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  
+  useEffect(() => {
+    // CrÃ©er un nouveau LayerGroup si nÃ©cessaire
+    if (!layerRef.current) {
+      layerRef.current = L.layerGroup();
+      
+      // Ajouter le LayerGroup Ã  la carte si la couche est visible
+      if (isVisible) {
+        layerRef.current.addTo(map);
+      }
+    } else {
+      // Sinon, vider le LayerGroup existant
+      layerRef.current.clearLayers();
+      
+      // Ajouter ou retirer le LayerGroup de la carte selon la visibilitÃ©
+      if (isVisible && !map.hasLayer(layerRef.current)) {
+        map.addLayer(layerRef.current);
+      } else if (!isVisible && map.hasLayer(layerRef.current)) {
+        map.removeLayer(layerRef.current);
+      }
+    }
+    
+    // Ajouter les marqueurs des coursiers au LayerGroup seulement si la couche est visible
+    if (isVisible) {
+      courierLocations.forEach(courier => {
+        const icon = courier.isArrival ? arrivalIcon : departIcon;
+        const marker = L.marker([courier.latitude, courier.longitude], { icon })
+          .bindPopup(`
+            <div class="courier-popup">
+              <h3>${courier.nom}</h3>
+              <p><strong>TournÃ©e:</strong> ${courier.tourneeName}</p>
+              <p><strong>Dernier scan:</strong> ${formatDate(courier.lastScan)}</p>
+              <p><strong>Site:</strong> ${courier.siteName}</p>
+              <p><strong>Statut:</strong> ${courier.isArrival ? 'ArrivÃ©e' : 'DÃ©part'}</p>
+            </div>
+          `);
+        
+        layerRef.current?.addLayer(marker);
+      });
+    }
+    
+    // Nettoyer le LayerGroup lors du dÃ©montage du composant
+    return () => {
+      if (layerRef.current) {
+        if (map.hasLayer(layerRef.current)) {
+          map.removeLayer(layerRef.current);
+        }
+        layerRef.current = null;
+      }
+    };
+  }, [courierLocations, departIcon, arrivalIcon, formatDate, map, isVisible]);
+  
+  // GÃ©rer l'affichage/masquage de la couche en fonction du contrÃ´le des couches
+  useEffect(() => {
+    const handleLayerControlChange = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === 'Coursiers') {
+            // Mettre Ã  jour l'Ã©tat de visibilitÃ© en fonction de la case Ã  cocher
+            setIsVisible((checkbox as HTMLInputElement).checked);
+            
+            // Ajouter un Ã©couteur d'Ã©vÃ©nements pour les changements futurs
+            (checkbox as HTMLInputElement).addEventListener('change', (e) => {
+              const isChecked = (e.target as HTMLInputElement).checked;
+              setIsVisible(isChecked);
+            });
+          }
+        });
+      }
+    };
+    
+    // Attendre que le contrÃ´le des couches soit ajoutÃ  la carte
+    const checkLayersControl = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        handleLayerControlChange();
+      } else {
+        // Si le contrÃ´le n'est pas encore disponible, rÃ©essayer plus tard
+        setTimeout(checkLayersControl, 100);
+      }
+    };
+    
+    checkLayersControl();
+    
+    // Nettoyer les Ã©couteurs d'Ã©vÃ©nements lors du dÃ©montage du composant
+    return () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          if ((checkbox as HTMLInputElement).nextSibling?.textContent?.trim() === 'Coursiers') {
+            (checkbox as HTMLInputElement).removeEventListener('change', () => {});
+          }
+        });
+      }
+    };
+  }, [map]);
+  
+  return null;
+};
+
+// Composant pour gÃ©rer les animations des marqueurs
+const AnimatedMarker: React.FC<{
+  position: [number, number];
+  icon: L.Icon;
+  popup: React.ReactNode;
+  markerId: string;
+}> = ({ position, icon, popup, markerId }) => {
+  const markerRef = useRef<L.Marker | null>(null);
+  const map = useMap();
+
+  useEffect(() => {
+    if (markerRef.current) {
+      const marker = markerRef.current;
+      const currentPos = marker.getLatLng();
+      const targetPos = L.latLng(position[0], position[1]);
+
+      // Animation fluide si le marqueur existe dÃ©jÃ 
+      if (currentPos && !currentPos.equals(targetPos)) {
+        marker.slideTo(targetPos, {
+          duration: 1000,
+          keepAtCenter: false
+        });
+      }
+    }
+  }, [position]);
+
+  return (
+    <Marker
+      position={position}
+      icon={icon}
+      ref={markerRef}
+    >
+      {popup}
+    </Marker>
+  );
+};
+
+// CoordonnÃ©es du centre de la France
+const franceCenter: [number, number] = [46.603354, 1.888334];
+
+// Fonction pour gÃ©nÃ©rer des coordonnÃ©es pour un site sans coordonnÃ©es
+const generateCoordinates = (site: Site, index: number): [number, number] => {
+  // CoordonnÃ©es de base (centre de la France)
+  const baseLatitude = 46.603354;
+  const baseLongitude = 1.888334;
+  
+  // Si le site a un code postal, utiliser les deux premiers chiffres pour gÃ©nÃ©rer des coordonnÃ©es
+  if (site.codePostal && site.codePostal.length >= 2) {
+    const departement = parseInt(site.codePostal.substring(0, 2), 10);
+    
+    // Carte approximative des dÃ©partements franÃ§ais (latitude et longitude)
+    // Nous utilisons le numÃ©ro de dÃ©partement pour gÃ©nÃ©rer des coordonnÃ©es approximatives
+    const latOffset = ((departement % 10) - 5) * 0.5; // -2.5 Ã  +2.5 degrÃ©s
+    const lonOffset = ((Math.floor(departement / 10) % 10) - 5) * 0.5; // -2.5 Ã  +2.5 degrÃ©s
+    
+    // Ajouter un petit dÃ©calage pour chaque site dans le mÃªme dÃ©partement
+    const siteOffset = index * 0.01;
+    
+    return [
+      baseLatitude + latOffset + siteOffset,
+      baseLongitude + lonOffset + siteOffset
+    ];
+  }
+  
+  // Si le site a une ville mais pas de code postal, utiliser la premiÃ¨re lettre de la ville
+  if (site.ville) {
+    const firstLetter = site.ville.charAt(0).toUpperCase();
+    const letterCode = firstLetter.charCodeAt(0) - 65; // A=0, B=1, etc.
+    
+    // Utiliser le code de la lettre pour gÃ©nÃ©rer des coordonnÃ©es
+    const latOffset = ((letterCode % 5) - 2) * 0.5; // -1 Ã  +1 degrÃ©s
+    const lonOffset = ((Math.floor(letterCode / 5) % 5) - 2) * 0.5; // -1 Ã  +1 degrÃ©s
+    
+    // Ajouter un petit dÃ©calage pour chaque site dans la mÃªme ville
+    const siteOffset = index * 0.01;
+    
+    return [
+      baseLatitude + latOffset + siteOffset,
+      baseLongitude + lonOffset + siteOffset
+    ];
+  }
+  
+  // Si le site n'a ni code postal ni ville, utiliser un dÃ©calage basÃ© sur l'index
+  return [
+    baseLatitude + (index * 0.01),
+    baseLongitude + (index * 0.01)
+  ];
+};
+
+// Composant pour la lÃ©gende des sites
+const SiteLegend: React.FC = () => {
+  const map = useMap();
+  const [markerPreferences, setMarkerPreferences] = useState<MarkerPreference[]>([]);
+  const legendControlRef = useRef<any>(null);
+  const updateTimerRef = useRef<number | null>(null);
+
+  // Utiliser useMemo pour Ã©viter les recalculs inutiles du contenu de la lÃ©gende
+  const legendContent = useMemo(() => {
+    // Utiliser les prÃ©fÃ©rences de marqueurs si disponibles
+    const legendItems = markerPreferences.length > 0 
+      ? markerPreferences.map(pref => `
+          <div class="site-legend-item">
+            <div class="site-legend-color" style="background-color: ${pref.color};"></div>
+            <div class="site-legend-label">${pref.name}</div>
+          </div>
+        `).join('')
+      : `
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-laboratoire"></div>
+          <div class="site-legend-label">Laboratoire</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-clinique"></div>
+          <div class="site-legend-label">Clinique</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-plateau"></div>
+          <div class="site-legend-label">Plateau technique</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-collecte"></div>
+          <div class="site-legend-label">Point de collecte</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-etablissement"></div>
+          <div class="site-legend-label">Ã‰tablissement de santÃ©</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-ehpad"></div>
+          <div class="site-legend-label">Ehpad</div>
+        </div>
+        <div class="site-legend-item">
+          <div class="site-legend-color site-legend-color-veterinaire"></div>
+          <div class="site-legend-label">VÃ©tÃ©rinaire</div>
+        </div>
+      `;
+    
+    return `
+      ${legendItems}
+      <div class="site-legend-item generated">
+        <div class="site-legend-color" style="border: 2px dashed red; opacity: 0.6;"></div>
+        <div class="site-legend-label">CoordonnÃ©es gÃ©nÃ©rÃ©es</div>
+      </div>
+    `;
+  }, [markerPreferences]);
+
+  useEffect(() => {
+    // RÃ©cupÃ©rer les prÃ©fÃ©rences de marqueurs une seule fois
+    const fetchPreferences = async () => {
+      try {
+        const preferencesRef = collection(db, 'markerPreferences');
+        const snapshot = await getDocs(preferencesRef);
+        
+        if (!snapshot.empty) {
+          const preferencesData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as MarkerPreference[];
+          
+          setMarkerPreferences(preferencesData);
+          // Utiliser un niveau de log moins verbeux
+          console.debug(`LÃ©gende: ${preferencesData.length} prÃ©fÃ©rences de marqueurs chargÃ©es`);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la rÃ©cupÃ©ration des prÃ©fÃ©rences de marqueurs pour la lÃ©gende:', 
+error);
+      }
+    };
+    
+    fetchPreferences();
+    
+    // CrÃ©er un contrÃ´le personnalisÃ© pour la lÃ©gende une seule fois
+    if (!legendControlRef.current) {
+      const LegendControl = L.Control.extend({
+        options: {
+          position: 'bottomright'
+        },
+        
+        onAdd: function(map: L.Map): HTMLElement {
+          const div = L.DomUtil.create('div', 'info legend site-legend');
+          div.innerHTML = `
+            <h4>Types de sites</h4>
+            <div class="site-legend-items">Chargement...</div>
+          `;
+          return div;
+        }
+      });
+
+      // Ajouter le contrÃ´le Ã  la carte une seule fois
+      legendControlRef.current = new LegendControl();
+      map.addControl(legendControlRef.current);
+    }
+
+    // Mettre Ã  jour le contenu de la lÃ©gende
+    const updateLegendContent = () => {
+      if (!legendControlRef.current || !legendControlRef.current._container) return;
+      
+      const legendContainer = legendControlRef.current._container.querySelector('.site-legend-items');
+      if (!legendContainer) return;
+      
+      legendContainer.innerHTML = legendContent;
+    };
+    
+    // Mettre Ã  jour le contenu initial
+    updateLegendContent();
+    
+    // Configurer un Ã©couteur pour les changements dans les prÃ©fÃ©rences de marqueurs
+    // avec une frÃ©quence limitÃ©e pour Ã©viter les mises Ã  jour trop frÃ©quentes
+    const preferencesRef = collection(db, 'markerPreferences');
+    const unsubscribe = onSnapshot(preferencesRef, (snapshot) => {
+      // Annuler la mise Ã  jour prÃ©cÃ©dente si elle est en attente
+      if (updateTimerRef.current !== null) {
+        clearTimeout(updateTimerRef.current);
+      }
+      
+      // Planifier une nouvelle mise Ã  jour avec un dÃ©lai pour limiter la frÃ©quence
+      updateTimerRef.current = window.setTimeout(() => {
+        const preferencesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MarkerPreference[];
+        
+        setMarkerPreferences(preferencesData);
+        // Utiliser un niveau de log moins verbeux et limiter les informations affichÃ©es
+        if (import.meta.env.DEV) {
+          console.debug(`Mise Ã jour de la lÃ©gende: ${preferencesData.length} prÃ©fÃ©rences`);
+        }
+        updateTimerRef.current = null;
+      }, 1000); // Attendre 1 seconde avant de mettre Ã  jour
+    });
+    
+    return () => {
+      unsubscribe();
+      if (updateTimerRef.current !== null) {
+        clearTimeout(updateTimerRef.current);
+      }
+    };
+  }, [map, legendContent]);
+
+  // Nettoyer le contrÃ´le lors du dÃ©montage final du composant
+  useEffect(() => {
+    return () => {
+      if (legendControlRef.current) {
+        map.removeControl(legendControlRef.current);
+        legendControlRef.current = null;
+      }
+    };
+  }, [map]);
+
+  return null;
+};
+
+// Composant pour les en-tÃªtes de section dans le contrÃ´le des couches
+const SectionHeader: React.FC<{ title: string }> = ({ title }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Ajouter un style personnalisÃ© aprÃ¨s le rendu du composant
+    const addCustomStyle = () => {
+      const labels = document.querySelectorAll('.leaflet-control-layers-overlays label');
+      
+      labels.forEach(label => {
+        const span = label.querySelector('span');
+        if (span && span.textContent === title) {
+          label.classList.add('layer-section-header');
+          const checkbox = label.querySelector('input[type="checkbox"]') as HTMLInputElement;
+          if (checkbox) {
+            checkbox.disabled = true;
+            checkbox.style.display = 'none';
+          }
+        }
+      });
+    };
+    
+    // ExÃ©cuter aprÃ¨s un court dÃ©lai pour s'assurer que le DOM est mis Ã  jour
+    setTimeout(addCustomStyle, 100);
+    
+    // Observer les changements dans le contrÃ´le de couches
+    const observer = new MutationObserver(addCustomStyle);
+    const layersControl = document.querySelector('.leaflet-control-layers');
+    
+    if (layersControl) {
+      observer.observe(layersControl, { childList: true, subtree: true });
+    }
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [title]);
+  
+  return <LayerGroup />;
+};
+
+// Composant pour ajouter le contrÃ´le des libellÃ©s et des filtres personnalisÃ©s
+const MapControls: React.FC<{
+  showLabels: boolean,
+  setShowLabels: (show: boolean) => void,
+  sites: Site[],
+  setSiteFilter: (filter: string | null) => void,
+  currentFilter: string | null,
+  showGeneratedCoordinates: boolean,
+  setShowGeneratedCoordinates: (show: boolean) => void,
+  onZoomToSite: (site: Site) => void
+}> = ({ 
+  showLabels, 
+  setShowLabels, 
+  sites, 
+  setSiteFilter, 
+  currentFilter,
+  showGeneratedCoordinates,
+  setShowGeneratedCoordinates,
+  onZoomToSite
+}) => {
+  const map = useMap();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [searchResults, setSearchResults] = useState<Site[]>([]);
+  
+  // Mettre Ã  jour les rÃ©sultats de recherche lorsque le terme de recherche change
+  useEffect(() => {
+    if (!searchTerm) {
+      setSearchResults([]);
+      return;
+    }
+    
+    const normalizedSearch = searchTerm.toLowerCase();
+    const results = sites.filter(site => 
+      site.nom?.toLowerCase().includes(normalizedSearch) ||
+      site.adresse?.toLowerCase().includes(normalizedSearch) ||
+      site.ville?.toLowerCase().includes(normalizedSearch) ||
+      site.codePostal?.includes(normalizedSearch) ||
+      site.type?.toLowerCase().includes(normalizedSearch)
+    ).slice(0, 5); // Limiter Ã  5 rÃ©sultats
+    
+    setSearchResults(results);
+  }, [searchTerm, sites]);
+  
+  useEffect(() => {
+    // CrÃ©er un contrÃ´le personnalisÃ©
+    const MapControlsControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control map-custom-controls');
+        
+        // Bouton pour activer/dÃ©sactiver les libellÃ©s
+        const labelsButton = L.DomUtil.create('a', 'leaflet-control-labels', container);
+        labelsButton.innerHTML = '<i class="fas fa-tag"></i>';
+        labelsButton.href = '#';
+        labelsButton.title = showLabels ? 'Masquer les libellÃ©s' : 'Afficher les libellÃ©s';
+        labelsButton.setAttribute('role', 'button');
+        labelsButton.setAttribute('aria-label', showLabels ? 'Masquer les libellÃ©s' : 'Afficher les 
+libellÃ©s');
+        
+        if (showLabels) {
+          labelsButton.classList.add('active');
+        }
+        
+        L.DomEvent.on(labelsButton, 'click', function(e) {
+          L.DomEvent.preventDefault(e);
+          setShowLabels(!showLabels);
+          labelsButton.title = !showLabels ? 'Masquer les libellÃ©s' : 'Afficher les libellÃ©s';
+          labelsButton.classList.toggle('active');
+        });
+        
+        // CrÃ©er un conteneur pour les filtres
+        const filtersContainer = L.DomUtil.create('div', 'map-filters-container', container);
+        filtersContainer.style.display = filtersVisible ? 'block' : 'none';
+        
+        // Ajouter un titre
+        const filterTitle = L.DomUtil.create('div', 'map-filter-title', filtersContainer);
+        filterTitle.textContent = 'Filtres';
+        
+        // Ajouter un champ de recherche
+        const searchContainer = L.DomUtil.create('div', 'map-filter-search', filtersContainer);
+        const searchInput = L.DomUtil.create('input', 'map-filter-search-input', searchContainer);
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Rechercher un site...';
+        searchInput.value = searchTerm;
+        
+        // Conteneur pour les rÃ©sultats de recherche
+        const searchResultsContainer = L.DomUtil.create('div', 'map-search-results', filtersContainer);
+        searchResultsContainer.style.display = 'none';
+        
+        // Mettre Ã  jour les rÃ©sultats de recherche
+        const updateSearchResults = () => {
+          searchResultsContainer.innerHTML = '';
+          
+          if (searchResults.length === 0) {
+            if (searchTerm) {
+              searchResultsContainer.innerHTML = '<div class="map-search-no-results">Aucun rÃ©sultat 
+trouvÃ©</div>';
+              searchResultsContainer.style.display = 'block';
+            } else {
+              searchResultsContainer.style.display = 'none';
+            }
+            return;
+          }
+          
+          searchResultsContainer.style.display = 'block';
+          
+          searchResults.forEach(site => {
+            const resultItem = L.DomUtil.create('div', 'map-search-result-item', searchResultsContainer);
+            resultItem.innerHTML = `
+              <div class="map-search-result-name">${site.nom}</div>
+              <div class="map-search-result-details">
+                ${site.type ? `<span>${site.type}</span>` : ''}
+                ${site.ville ? `<span>${site.ville}</span>` : ''}
+              </div>
+            `;
+            
+            L.DomEvent.on(resultItem, 'click', function() {
+              onZoomToSite(site);
+              searchResultsContainer.style.display = 'none';
+              setSearchTerm('');
+              searchInput.value = '';
+            });
+          });
+        };
+        
+        // Mettre Ã  jour les rÃ©sultats initiaux
+        updateSearchResults();
+        
+        // Mettre Ã  jour les rÃ©sultats lorsqu'ils changent
+        const observer = new MutationObserver(() => {
+          updateSearchResults();
+        });
+        
+        L.DomEvent.on(searchInput, 'input', function(e) {
+          setSearchTerm((e.target as HTMLInputElement).value);
+          if ((e.target as HTMLInputElement).value) {
+            setSiteFilter((e.target as HTMLInputElement).value);
+          } else {
+            setSiteFilter(null);
+            searchResultsContainer.style.display = 'none';
+          }
+        });
+        
+        // Ajouter une option pour afficher/masquer les coordonnÃ©es gÃ©nÃ©rÃ©es
+        const generatedCoordsContainer = L.DomUtil.create('div', 'map-filter-option', filtersContainer);
+        const generatedCoordsCheckbox = L.DomUtil.create('input', '', generatedCoordsContainer);
+        generatedCoordsCheckbox.type = 'checkbox';
+        generatedCoordsCheckbox.id = 'show-generated-coords';
+        generatedCoordsCheckbox.checked = showGeneratedCoordinates;
+        
+        const generatedCoordsLabel = L.DomUtil.create('label', '', generatedCoordsContainer);
+        generatedCoordsLabel.htmlFor = 'show-generated-coords';
+        generatedCoordsLabel.textContent = 'Afficher les coordonnÃ©es gÃ©nÃ©rÃ©es';
+        
+        L.DomEvent.on(generatedCoordsCheckbox, 'change', function(e) {
+          setShowGeneratedCoordinates((e.target as HTMLInputElement).checked);
+        });
+        
+        // Bouton pour afficher/masquer les filtres
+        const filtersButton = L.DomUtil.create('a', 'leaflet-control-filters', container);
+        filtersButton.innerHTML = '<i class="fas fa-filter"></i>';
+        filtersButton.href = '#';
+        filtersButton.title = 'Filtres avancÃ©s';
+        filtersButton.setAttribute('role', 'button');
+        filtersButton.setAttribute('aria-label', 'Filtres avancÃ©s');
+        
+        if (filtersVisible) {
+          filtersButton.classList.add('active');
+        }
+        
+        L.DomEvent.on(filtersButton, 'click', function(e) {
+          L.DomEvent.preventDefault(e);
+          setFiltersVisible(!filtersVisible);
+          filtersContainer.style.display = filtersVisible ? 'block' : 'none';
+          filtersButton.classList.toggle('active');
+        });
+        
+        // EmpÃªcher la propagation des Ã©vÃ©nements pour Ã©viter que la carte ne se dÃ©place
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+        
+        return container;
+      }
+    });
+    
+    // Ajouter le contrÃ´le Ã  la carte
+    const mapControlsControl = new MapControlsControl();
+    map.addControl(mapControlsControl);
+    
+    return () => {
+      map.removeControl(mapControlsControl);
+    };
+  }, [map, showLabels, setShowLabels, sites, setSiteFilter, currentFilter, searchTerm, filtersVisible, 
+showGeneratedCoordinates, setShowGeneratedCoordinates, searchResults, onZoomToSite]);
+  
+  return null;
+};
+
+// Composant pour initialiser les Ã©vÃ©nements des couches
+const LayersEventInitializer: React.FC = () => {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Initialiser le contrÃ´le des couches
+    const initLayersControl = () => {
+      const layersControl = document.querySelector('.leaflet-control-layers');
+      if (layersControl) {
+        // S'assurer que toutes les cases Ã  cocher sont cochÃ©es par dÃ©faut
+        const checkboxes = layersControl.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          (checkbox as HTMLInputElement).checked = true;
+        });
+        
+        // DÃ©clencher un Ã©vÃ©nement change sur chaque case Ã  cocher pour activer les couches
+        checkboxes.forEach(checkbox => {
+          const event = new Event('change', { bubbles: true });
+          (checkbox as HTMLInputElement).dispatchEvent(event);
+        });
+        
+        // Ajouter des sÃ©parateurs visuels pour les sections
+        const overlaysContainer = layersControl.querySelector('.leaflet-control-layers-overlays');
+        if (overlaysContainer) {
+          const labels = overlaysContainer.querySelectorAll('label');
+          labels.forEach(label => {
+            const text = label.textContent?.trim();
+            if (text && text.startsWith('---')) {
+              // CrÃ©er un Ã©lÃ©ment de sÃ©paration
+              const separator = document.createElement('div');
+              separator.className = 'layer-section-header';
+              separator.innerHTML = `<span>${text.replace(/^---\s*/, '')}</span>`;
+              
+              // Remplacer le label par le sÃ©parateur
+              label.parentNode?.replaceChild(separator, label);
+            }
+          });
+        }
+      } else {
+        // Si le contrÃ´le n'est pas encore disponible, rÃ©essayer plus tard
+        setTimeout(initLayersControl, 100);
+      }
+    };
+    
+    // Attendre que la carte soit chargÃ©e avant d'initialiser le contrÃ´le des couches
+    setTimeout(initLayersControl, 500);
+    
+    return () => {
+      // Nettoyer les Ã©couteurs d'Ã©vÃ©nements si nÃ©cessaire
+    };
+  }, [map]);
+  
+  return null;
+};
+
+// Composant pour corriger manuellement les coordonnÃ©es d'un site
+const ManualCoordinatesCorrection: React.FC<{
+  sites: Site[];
+  onCoordinatesUpdated: (siteId: string, latitude: number, longitude: number) => void;
+}> = ({ sites, onCoordinatesUpdated }) => {
+  const map = useMap();
+  const [isActive, setIsActive] = useState(false);
+  const [selectedSite, setSelectedSite] = useState<Site | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<Site[]>([]);
+  const markerRef = useRef<L.Marker | null>(null);
+  
+  // Filtrer les sites en fonction du terme de recherche
+  useEffect(() => {
+    if (!searchTerm) {
+      setSearchResults([]);
+      return;
+    }
+    
+    const normalizedSearch = searchTerm.toLowerCase();
+    const results = sites.filter(site => 
+      site.nom?.toLowerCase().includes(normalizedSearch) ||
+      site.adresse?.toLowerCase().includes(normalizedSearch) ||
+      site.ville?.toLowerCase().includes(normalizedSearch) ||
+      site.codePostal?.includes(normalizedSearch)
+    ).slice(0, 10); // Limiter Ã  10 rÃ©sultats
+    
+    setSearchResults(results);
+  }, [searchTerm, sites]);
+  
+  // Fonction pour sÃ©lectionner un site
+  const selectSite = (site: Site) => {
+    setSelectedSite(site);
+    setSearchTerm('');
+    setSearchResults([]);
+    
+    if (site.latitude && site.longitude) {
+      // Centrer la carte sur le site
+      map.setView([site.latitude, site.longitude], 15);
+      
+      // CrÃ©er un marqueur dÃ©plaÃ§able
+      if (markerRef.current) {
+        map.removeLayer(markerRef.current);
+      }
+      
+      const marker = L.marker([site.latitude, site.longitude], {
+        draggable: true,
+        icon: L.divIcon({
+          className: 'correction-marker',
+          html: `<div style="background-color: red; width: 24px; height: 24px; border-radius: 50%; 
+display: flex; justify-content: center; align-items: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);">
+                  <i class="fas fa-map-marker-alt" style="color: white; font-size: 14px;"></i>
+                </div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        })
+      }).addTo(map);
+      
+      // Ajouter un popup avec les informations du site
+      marker.bindPopup(`
+        <div>
+          <strong>${site.nom}</strong><br>
+          ${site.adresse}<br>
+          ${site.codePostal} ${site.ville || ''}
+        </div>
+      `).openPopup();
+      
+      // Mettre Ã  jour les coordonnÃ©es lorsque le marqueur est dÃ©placÃ©
+      marker.on('dragend', (e) => {
+        const newLatLng = marker.getLatLng();
+        console.log(`Nouvelles coordonnÃ©es pour ${site.nom}: Lat=${newLatLng.lat}, Lng=${newLatLng.lng}`);
+      });
+      
+      markerRef.current = marker;
+    } else {
+      alert(`Le site "${site.nom}" n'a pas de coordonnÃ©es. Veuillez d'abord le gÃ©ocoder.`);
+    }
+  };
+  
+  // Fonction pour enregistrer les nouvelles coordonnÃ©es
+  const saveCoordinates = () => {
+    if (selectedSite && markerRef.current) {
+      const newLatLng = markerRef.current.getLatLng();
+      onCoordinatesUpdated(selectedSite.id, newLatLng.lat, newLatLng.lng);
+      
+      // Afficher un message de confirmation
+      alert(`Les coordonnÃ©es du site "${selectedSite.nom}" ont Ã©tÃ© mises Ã  jour.`);
+      
+      // RÃ©initialiser
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
+      setSelectedSite(null);
+      setIsActive(false);
+    }
+  };
+  
+  // Fonction pour annuler la correction
+  const cancelCorrection = () => {
+    if (markerRef.current) {
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
+    }
+    
+    setSelectedSite(null);
+    setIsActive(false);
+  };
+  
+  useEffect(() => {
+    // CrÃ©er un contrÃ´le personnalisÃ©
+    const CorrectionControl = L.Control.extend({
+      options: {
+        position: 'topleft'
+      },
+      
+      onAdd: function() {
+        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control correction-control');
+        
+        if (!isActive) {
+          // Bouton pour activer la correction
+          const button = L.DomUtil.create('a', 'correction-button', container);
+          button.innerHTML = '<i class="fas fa-map-marker-alt"></i>';
+          button.href = '#';
+          button.title = 'Corriger les coordonnÃ©es d\'un site';
+          
+          L.DomEvent.on(button, 'click', function(e) {
+            L.DomEvent.preventDefault(e);
+            setIsActive(true);
+          });
+        } else {
+          // Interface de correction
+          const correctionPanel = L.DomUtil.create('div', 'correction-panel', container);
+          
+          // Titre
+          const title = L.DomUtil.create('div', 'correction-title', correctionPanel);
+          title.textContent = 'Correction de coordonnÃ©es';
+          
+          // Champ de recherche
+          const searchContainer = L.DomUtil.create('div', 'correction-search', correctionPanel);
+          const searchInput = L.DomUtil.create('input', 'correction-search-input', searchContainer);
+          searchInput.type = 'text';
+          searchInput.placeholder = 'Rechercher un site...';
+          searchInput.value = searchTerm;
+          
+          L.DomEvent.on(searchInput, 'input', function(e) {
+            setSearchTerm((e.target as HTMLInputElement).value);
+          });
+          
+          // RÃ©sultats de recherche
+          if (searchResults.length > 0) {
+            const resultsContainer = L.DomUtil.create('div', 'correction-results', correctionPanel);
+            
+            searchResults.forEach(site => {
+              const resultItem = L.DomUtil.create('div', 'correction-result-item', resultsContainer);
+              resultItem.textContent = site.nom;
+              
+              L.DomEvent.on(resultItem, 'click', function() {
+                selectSite(site);
+              });
+            });
+          }
+          
+          // Site sÃ©lectionnÃ©
+          if (selectedSite) {
+            const selectedContainer = L.DomUtil.create('div', 'correction-selected', correctionPanel);
+            
+            const siteInfo = L.DomUtil.create('div', 'correction-site-info', selectedContainer);
+            siteInfo.innerHTML = `
+              <strong>${selectedSite.nom}</strong><br>
+              ${selectedSite.adresse}<br>
+              ${selectedSite.codePostal} ${selectedSite.ville || ''}
+            `;
+            
+            const instructions = L.DomUtil.create('div', 'correction-instructions', selectedContainer);
+            instructions.textContent = 'DÃ©placez le marqueur rouge Ã la position correcte, puis cliquez 
+sur "Enregistrer".';
+            
+            const buttonsContainer = L.DomUtil.create('div', 'correction-buttons', selectedContainer);
+            
+            const saveButton = L.DomUtil.create('button', 'correction-save-button', buttonsContainer);
+            saveButton.textContent = 'Enregistrer';
+            
+            L.DomEvent.on(saveButton, 'click', function() {
+              saveCoordinates();
+            });
+            
+            const cancelButton = L.DomUtil.create('button', 'correction-cancel-button', buttonsContainer);
+            cancelButton.textContent = 'Annuler';
+            
+            L.DomEvent.on(cancelButton, 'click', function() {
+              cancelCorrection();
+            });
+          }
+          
+          // Bouton pour fermer le panneau
+          if (!selectedSite) {
+            const closeButton = L.DomUtil.create('button', 'correction-close-button', correctionPanel);
+            closeButton.textContent = 'Fermer';
+            
+            L.DomEvent.on(closeButton, 'click', function() {
+              setIsActive(false);
+            });
+          }
+        }
+        
+        // EmpÃªcher la propagation des Ã©vÃ©nements pour Ã©viter que la carte ne se dÃ©place
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+        
+        return container;
+      }
+    });
+    
+    // Ajouter le contrÃ´le Ã  la carte
+    const correctionControl = new CorrectionControl();
+    map.addControl(correctionControl);
+    
+    return () => {
+      map.removeControl(correctionControl);
+      
+      if (markerRef.current) {
+        map.removeLayer(markerRef.current);
+        markerRef.current = null;
+      }
+    };
+  }, [map, isActive, searchTerm, searchResults, selectedSite, sites, onCoordinatesUpdated]);
+  
+  return null;
+};
+
+const MapView: React.FC = () => {
+  const [courierLocations, setCourierLocations] = useState<CourierLocation[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [tournees, setTournees] = useState<Tournee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [geocodingStatus, setGeocodingStatus] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [showGeneratedCoordinates, setShowGeneratedCoordinates] = useState(true);
+  const [markerPreferences, setMarkerPreferences] = useState<MarkerPreference[]>([]);
+  const [showLabels, setShowLabels] = useState(false);
+  const [siteFilter, setSiteFilter] = useState<string | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<{[key: string]: L.Marker}>({});
+  const layerGroupRef = useRef<L.LayerGroup | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  
+  // RÃ©fÃ©rence pour suivre si les prÃ©fÃ©rences ont dÃ©jÃ  Ã©tÃ© chargÃ©es
+  const preferencesLoadedRef = useRef(false);
+
+  useEffect(() => {
+    // RÃ©cupÃ©rer les sites et les tournÃ©es
+    const unsubscribeSites = fetchSites();
+    const unsubscribeTournees = fetchTournees();
+    
+    // RÃ©cupÃ©rer les prÃ©fÃ©rences de marqueurs une seule fois au chargement initial
+    if (!preferencesLoadedRef.current) {
+      fetchMarkerPreferences();
+      preferencesLoadedRef.current = true;
+    }
+    
+    // Nettoyer les abonnements
+    return () => {
+      unsubscribeSites();
+      unsubscribeTournees();
+    };
+  }, []);
+
+  // Nouvel effet pour gÃ©rer l'Ã©couteur des passages
+  useEffect(() => {
+    const unsubscribePassages = setupRealTimeListener();
+    return () => {
+      if (unsubscribePassages) unsubscribePassages();
+    };
+  }, [sites, tournees]); // Ajouter les dÃ©pendances nÃ©cessaires
+
+  // Modifier fetchSites pour utiliser onSnapshot au lieu de getDocs
+  const fetchSites = () => {
+    try {
+      const sitesRef = collection(db, 'sites');
+      return onSnapshot(sitesRef, (snapshot) => {
+        const sitesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Site[];
+        
+        // VÃ©rifier combien de sites ont des coordonnÃ©es
+        const sitesWithCoordinates = sitesData.filter(site => 
+          site.latitude && site.longitude
+        );
+        
+        console.log(`${sitesWithCoordinates.length} sites sur ${sitesData.length} ont des coordonnÃ©es 
+gÃ©ographiques.`);
+        
+        // Afficher les types de sites pour le dÃ©bogage
+        const typeCounts = sitesData.reduce((acc, site) => {
+          const type = site.type || 'Non spÃ©cifiÃ©';
+          acc[type] = (acc[type] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log('RÃ©partition des types de sites:', typeCounts);
+        
+        setSites(sitesData);
+      }, (error) => {
+        console.error('Erreur lors de la rÃ©cupÃ©ration des sites:', error);
+        setError('Erreur lors de la rÃ©cupÃ©ration des sites');
+      });
+    } catch (error) {
+      console.error('Erreur lors de la configuration de l\'Ã©couteur des sites:', error);
+      setError('Erreur lors de la configuration de l\'Ã©couteur des sites');
+      return () => {};
+    }
+  };
+
+  // Modifier fetchTournees pour utiliser onSnapshot au lieu de getDocs
+  const fetchTournees = () => {
+    try {
+      const tourneesRef = collection(db, 'tournees');
+      return onSnapshot(tourneesRef, (snapshot) => {
+        const tourneesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Tournee[];
+        
+        setTournees(tourneesData);
+      }, (error) => {
+        console.error('Erreur lors de la rÃ©cupÃ©ration des tournÃ©es:', error);
+        setError('Erreur lors de la rÃ©cupÃ©ration des tournÃ©es');
+      });
+    } catch (error) {
+      console.error('Erreur lors de la configuration de l\'Ã©couteur des tournÃ©es:', error);
+      setError('Erreur lors de la configuration de l\'Ã©couteur des tournÃ©es');
+      return () => {};
+    }
+  };
+
+  // Modifier setupRealTimeListener pour utiliser les sites et tournÃ©es Ã  jour
+  const setupRealTimeListener = useCallback(() => {
+    try {
+      const passagesRef = collection(db, 'passages');
+      const passagesQuery = query(passagesRef, where('statut', '==', 'En cours'));
+      
+      return onSnapshot(passagesQuery, async (snapshot) => {
+        setLoading(true);
+        
+        const locations: CourierLocation[] = [];
+        const changes = snapshot.docChanges();
+        
+        // Log des changements uniquement en mode dÃ©veloppement et seulement une fois
+        if (import.meta.env.DEV && changes.length > 0) {
+          // Utiliser un log plus discret
+          console.debug(`MapView: ${changes.length} changement(s) dÃ©tectÃ©(s)`);
+        }
+        
+        for (const doc of snapshot.docs) {
+          const passage = doc.data();
+          const isArrival = !!(passage.siteArrivee && passage.dateHeureArrivee);
+          const siteId = isArrival ? passage.siteArrivee : passage.siteDepart;
+          const site = sites.find(s => s.id === siteId);
+          
+          if (site && site.latitude && site.longitude) {
+            const tourneeId = passage.tourneeId;
+            const tournee = tournees.find(t => t.id === tourneeId);
+            const lastScan = isArrival ? passage.dateHeureArrivee : passage.dateHeureDepart;
+            
+            locations.push({
+              id: doc.id,
+              nom: passage.coursierChargement || 'Coursier inconnu',
+              tourneeId: tourneeId || '',
+              tourneeName: tournee?.nom || 'TournÃ©e inconnue',
+              siteId: siteId,
+              siteName: site.nom,
+              latitude: site.latitude,
+              longitude: site.longitude,
+              lastScan: lastScan,
+              isArrival: isArrival
+            });
+          }
+        }
+        
+        // Mettre Ã  jour les marqueurs et l'Ã©tat
+        setCourierLocations(locations);
+        setLoading(false);
+      }, (error) => {
+        console.error('Erreur lors de l\'Ã©coute des passages:', error);
+        setError('Erreur lors de l\'Ã©coute des passages');
+        setLoading(false);
+      });
+    } catch (error) {
+      console.error('Erreur lors de la configuration de l\'Ã©couteur en temps rÃ©el:', error);
+      setError('Erreur lors de la configuration de l\'Ã©couteur en temps rÃ©el');
+      setLoading(false);
+      return () => {};
+    }
+  }, [sites, tournees]); // Ajouter les dÃ©pendances au useCallback
+
+  // Formater la date pour l'affichage
+  const formatDate = (timestamp: any): string => {
+    if (!timestamp) return 'Date inconnue';
+    
+    try {
+      // GÃ©rer diffÃ©rents types de timestamp (Firestore Timestamp ou string)
+      let date;
+      if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+        // C'est un Timestamp Firestore
+        date = timestamp.toDate();
+      } else {
+        date = new Date(timestamp);
+      }
+      
+      // Formater la date
+      return date.toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (error) {
+      console.error('Erreur lors du formatage de la date:', error);
+      return 'Date invalide';
+    }
+  };
+
+  // Fonction pour gÃ©ocoder manuellement tous les sites
+  const geocodeAllSites = async () => {
+    try {
+      setIsGeocoding(true);
+      setGeocodingStatus('PrÃ©paration du gÃ©ocodage...');
+      
+      // Filtrer les sites sans coordonnÃ©es
+      const sitesWithoutCoordinates = sites.filter(site => 
+        !site.latitude || !site.longitude
+      );
+      
+      if (sitesWithoutCoordinates.length === 0) {
+        setGeocodingStatus('Tous les sites ont dÃ©jÃ  des coordonnÃ©es gÃ©ographiques.');
+        setTimeout(() => {
+          setGeocodingStatus(null);
+          setIsGeocoding(false);
+        }, 3000);
+        return;
+      }
+      
+      setGeocodingStatus(`GÃ©ocodage de ${sitesWithoutCoordinates.length} sites...`);
+      console.log(`DÃ©but du gÃ©ocodage pour ${sitesWithoutCoordinates.length} sites`);
+      
+      // GÃ©ocoder les sites sans coordonnÃ©es
+      const updatedSites = [...sites];
+      let geocodedCount = 0;
+      
+      for (const site of sitesWithoutCoordinates) {
+        if (site.adresse && (site.ville || site.codePostal)) {
+          try {
+            console.log(`Tentative de gÃ©ocodage pour le site: ${site.nom}, Adresse: ${site.adresse}, 
+${site.codePostal} ${site.ville}`);
+            
+            const coordinates = await geocodeAddress(
+              site.nom || '',
+              site.adresse || '',
+              site.ville || '',
+              site.codePostal || ''
+            );
+            
+            if (coordinates) {
+              console.log(`GÃ©ocodage rÃ©ussi pour ${site.nom}: Lat=${coordinates.latitude}, 
+Lon=${coordinates.longitude}`);
+              
+              // Mettre Ã  jour les coordonnÃ©es dans Firestore
+              const siteRef = doc(db, 'sites', site.id);
+              await updateDoc(siteRef, {
+                latitude: coordinates.latitude,
+                longitude: coordinates.longitude
+              });
+              
+              // Mettre Ã  jour les coordonnÃ©es dans l'Ã©tat local
+              const index = updatedSites.findIndex(s => s.id === site.id);
+              if (index !== -1) {
+                updatedSites[index] = {
+                  ...updatedSites[index],
+                  latitude: coordinates.latitude,
+                  longitude: coordinates.longitude
+                };
+              }
+              
+              geocodedCount++;
+              setGeocodingStatus(`GÃ©ocodage en cours... 
+${geocodedCount}/${sitesWithoutCoordinates.length}`);
+            } else {
+              console.log(`Ã‰chec du gÃ©ocodage pour ${site.nom}`);
+            }
+          } catch (error) {
+            console.error(`Erreur lors du gÃ©ocodage du site ${site.nom}:`, error);
+          }
+          
+          // Pause pour Ã©viter de dÃ©passer les limites de l'API
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          console.log(`Site ${site.nom} sans adresse complÃ¨te, gÃ©ocodage impossible`);
+        }
+      }
+      
+      if (geocodedCount > 0) {
+        console.log(`${geocodedCount} sites gÃ©ocodÃ©s avec succÃ¨s.`);
+        setSites(updatedSites);
+        setGeocodingStatus(`${geocodedCount} sites gÃ©ocodÃ©s avec succÃ¨s.`);
+      } else {
+        setGeocodingStatus('Aucun site n\'a pu Ãªtre gÃ©ocodÃ©. VÃ©rifiez que les adresses sont 
+complÃ¨tes.');
+      }
+      
+      // Masquer le statut aprÃ¨s quelques secondes
+      setTimeout(() => {
+        setGeocodingStatus(null);
+        setIsGeocoding(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Erreur lors du gÃ©ocodage des sites:', error);
+      setError('Erreur lors du gÃ©ocodage des sites');
+      setIsGeocoding(false);
+    }
+  };
+
+  // Fonction pour attribuer automatiquement des types et des pÃ´les aux sites
+  const assignTypesAndPoles = async () => {
+    try {
+      setIsGeocoding(true);
+      setGeocodingStatus('PrÃ©paration de la mise Ã  jour des sites...');
+      
+      // Filtrer les sites sans type ou sans pÃ´le
+      const sitesWithoutType = sites.filter(site => !site.type);
+      const sitesWithoutPole = sites.filter(site => !site.pole);
+      
+      if (sitesWithoutType.length === 0 && sitesWithoutPole.length === 0) {
+        setGeocodingStatus('Tous les sites ont dÃ©jÃ  un type et un pÃ´le dÃ©finis.');
+        setTimeout(() => {
+          setGeocodingStatus(null);
+          setIsGeocoding(false);
+        }, 3000);
+        return;
+      }
+      
+      setGeocodingStatus(`Mise Ã  jour de ${sitesWithoutType.length + sitesWithoutPole.length} sites...`);
+      
+      // Mettre Ã  jour les sites sans type
+      const updatedSites = [...sites];
+      let updatedCount = 0;
+      
+      // Attribuer des types aux sites qui n'en ont pas
+      for (const site of sitesWithoutType) {
+        try {
+          // Attribuer un type alÃ©atoire
+          const randomType = SITE_TYPES[Math.floor(Math.random() * SITE_TYPES.length)];
+          
+          // Mettre Ã  jour le type dans Firestore
+          const siteRef = doc(db, 'sites', site.id);
+          await updateDoc(siteRef, {
+            type: randomType
+          });
+          
+          // Mettre Ã  jour le type dans l'Ã©tat local
+          const index = updatedSites.findIndex(s => s.id === site.id);
+          if (index !== -1) {
+            updatedSites[index] = {
+              ...updatedSites[index],
+              type: randomType
+            };
+          }
+          
+          updatedCount++;
+          setGeocodingStatus(`Mise Ã jour en cours... ${updatedCount}/${sitesWithoutType.length + 
+sitesWithoutPole.length}`);
+        } catch (error) {
+          console.error(`Erreur lors de la mise Ã  jour du type du site ${site.nom}:`, error);
+        }
+      }
+      
+      // Attribuer des pÃ´les aux sites qui n'en ont pas
+      for (const site of sitesWithoutPole) {
+        try {
+          // Attribuer un pÃ´le alÃ©atoire
+          const randomPole = POLES[Math.floor(Math.random() * POLES.length)];
+          
+          // Mettre Ã  jour le pÃ´le dans Firestore
+          const siteRef = doc(db, 'sites', site.id);
+          await updateDoc(siteRef, {
+            pole: randomPole
+          });
+          
+          // Mettre Ã  jour le pÃ´le dans l'Ã©tat local
+          const index = updatedSites.findIndex(s => s.id === site.id);
+          if (index !== -1) {
+            updatedSites[index] = {
+              ...updatedSites[index],
+              pole: randomPole
+            };
+          }
+          
+          updatedCount++;
+          setGeocodingStatus(`Mise Ã jour en cours... ${updatedCount}/${sitesWithoutType.length + 
+sitesWithoutPole.length}`);
+        } catch (error) {
+          console.error(`Erreur lors de la mise Ã  jour du pÃ´le du site ${site.nom}:`, error);
+        }
+      }
+      
+      if (updatedCount > 0) {
+        console.log(`${updatedCount} sites mis Ã  jour avec succÃ¨s.`);
+        setSites(updatedSites);
+        setGeocodingStatus(`${updatedCount} sites mis Ã  jour avec succÃ¨s.`);
+      } else {
+        setGeocodingStatus('Aucun site n\'a pu Ãªtre mis Ã  jour.');
+      }
+      
+      // Masquer le statut aprÃ¨s quelques secondes
+      setTimeout(() => {
+        setGeocodingStatus(null);
+        setIsGeocoding(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Erreur lors de la mise Ã  jour des sites:', error);
+      setError('Erreur lors de la mise Ã  jour des sites');
+      setIsGeocoding(false);
+    }
+  };
+
+  // Fonction pour vÃ©rifier et mettre Ã  jour les types et pÃ´les des sites
+  const checkSiteTypesAndPoles = () => {
+    // VÃ©rifier si les types de sites sont dÃ©finis
+    if (!SITE_TYPES || SITE_TYPES.length === 0) {
+      console.warn('Aucun type de site dÃ©fini');
+    }
+    
+    // VÃ©rifier si les pÃ´les sont dÃ©finis
+    if (!POLES || POLES.length === 0) {
+      console.warn('Aucun pÃ´le dÃ©fini');
+    }
+    
+    return null;
+  };
+
+  // Calculer le nombre de sites avec et sans coordonnÃ©es
+  const sitesWithCoordinates = sites.filter(site => site.latitude && site.longitude);
+  const sitesWithoutCoordinates = sites.filter(site => !site.latitude || !site.longitude);
+
+  // Fonction pour rÃ©cupÃ©rer les prÃ©fÃ©rences de marqueurs
+  const fetchMarkerPreferences = async () => {
+    try {
+      console.debug('Chargement des prÃ©fÃ©rences de marqueurs...');
+      const preferencesRef = collection(db, 'markerPreferences');
+      
+      // Utiliser onSnapshot au lieu de getDocs pour obtenir les mises Ã  jour en temps rÃ©el
+      const unsubscribe = onSnapshot(preferencesRef, (snapshot) => {
+        const preferencesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MarkerPreference[];
+        
+        setMarkerPreferences(preferencesData);
+        console.debug(`${preferencesData.length} prÃ©fÃ©rences de marqueurs chargÃ©es`);
+      }, (error) => {
+        console.error('Erreur lors de la rÃ©cupÃ©ration des prÃ©fÃ©rences de marqueurs:', error);
+      });
+      
+      // Ajouter l'unsubscribe Ã  un effet de nettoyage
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Erreur lors de la configuration de l\'Ã©couteur des prÃ©fÃ©rences de marqueurs:', 
+error);
+      return () => {};
+    }
+  };
+  
+  // Configurer un Ã©couteur pour les changements dans les prÃ©fÃ©rences de marqueurs
+  useEffect(() => {
+    try {
+      const preferencesRef = collection(db, 'markerPreferences');
+      const unsubscribe = onSnapshot(preferencesRef, (snapshot) => {
+        const preferencesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as MarkerPreference[];
+        
+        setMarkerPreferences(preferencesData);
+        console.log(`Mise Ã jour des prÃ©fÃ©rences de marqueurs: ${preferencesData.length} prÃ©fÃ©rences 
+chargÃ©es`);
+      });
+      
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Erreur lors de la configuration de l\'Ã©couteur des prÃ©fÃ©rences de marqueurs:', 
+error);
+      return () => {};
+    }
+  }, []);
+
+  // Fonction pour obtenir l'icÃ´ne en fonction du type de site et des prÃ©fÃ©rences
+  const getIconForSiteType = (type: string | undefined, site?: Site): L.Icon => {
+    if (!type) return siteIcon;
+    
+    // Normaliser le type pour la comparaison
+    const normalizedType = normalizeType(type);
+    
+    // RÃ©cupÃ©rer la prÃ©fÃ©rence de marqueur pour ce type de site
+    const preference = markerPreferences.find(pref => 
+      normalizeType(pref.siteType) === normalizedType
+    );
+    
+    // Si une prÃ©fÃ©rence existe, crÃ©er une icÃ´ne personnalisÃ©e
+    if (preference) {
+      // CrÃ©er une icÃ´ne personnalisÃ©e avec la couleur spÃ©cifiÃ©e
+      const customIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+          <div style="background-color: ${preference.color}; width: 24px; height: 24px; border-radius: 
+50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);">
+            <i class="fas ${getIconClassForType(preference.icon)}" style="color: white; font-size: 
+14px;"></i>
+          </div>
+          ${showLabels && site ? `<div class="marker-label">${site.nom}</div>` : ''}
+        `,
+        iconSize: showLabels ? [120, 40] : [24, 24],
+        iconAnchor: [12, 12],
+        popupAnchor: [0, -12]
+      });
+      
+      return customIcon as unknown as L.Icon;
+    }
+    
+    // Si aucune prÃ©fÃ©rence n'est trouvÃ©e, utiliser les icÃ´nes par dÃ©faut
+    return getDefaultIconForSiteType(type);
+  };
+
+  // Fonction pour obtenir la classe d'icÃ´ne FontAwesome en fonction du type
+  const getIconClassForType = (iconType: string): string => {
+    switch (iconType) {
+      case 'droplet':
+        return 'fa-tint';
+      case 'circle':
+        return 'fa-circle';
+      case 'square':
+        return 'fa-square';
+      case 'triangle':
+        return 'fa-exclamation-triangle';
+      case 'star':
+        return 'fa-star';
+      case 'pin':
+        return 'fa-map-marker-alt';
+      default:
+        return 'fa-tint';
+    }
+  };
+
+  // Filtrer les sites en fonction du terme de recherche
+  const filteredSites = useMemo(() => {
+    if (!siteFilter) return sites;
+    
+    const normalizedFilter = siteFilter.toLowerCase();
+    return sites.filter(site => 
+      site.nom?.toLowerCase().includes(normalizedFilter) ||
+      site.adresse?.toLowerCase().includes(normalizedFilter) ||
+      site.ville?.toLowerCase().includes(normalizedFilter) ||
+      site.codePostal?.includes(normalizedFilter) ||
+      site.type?.toLowerCase().includes(normalizedFilter)
+    );
+  }, [sites, siteFilter]);
+
+  // Fonction pour zoomer sur un site spÃ©cifique
+  const handleZoomToSite = useCallback((site: Site) => {
+    if (!site.latitude || !site.longitude || !mapRef.current) return;
+    
+    mapRef.current.setView([site.latitude, site.longitude], 15);
+    
+    // CrÃ©er un marqueur temporaire pour indiquer le site
+    const tempMarker = L.marker([site.latitude, site.longitude], {
+      icon: L.divIcon({
+        className: 'temp-marker',
+        html: '<div class="pulse"></div>',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      })
+    }).addTo(mapRef.current);
+    
+    // Supprimer le marqueur aprÃ¨s quelques secondes
+    setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.removeLayer(tempMarker);
+      }
+    }, 3000);
+  }, [mapRef]);
+  
+  // Composant pour obtenir la rÃ©fÃ©rence Ã  la carte
+  const MapReference: React.FC = () => {
+    const map = useMap();
+    
+    useEffect(() => {
+      mapRef.current = map;
+    }, [map]);
+    
+    return null;
+  };
+
+  return (
+    <div className="map-view-container">
+      <h1>Carte des coursiers en temps rÃ©el</h1>
+      
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+      
+      {geocodingStatus && (
+        <div className="geocoding-status">
+          {geocodingStatus}
+        </div>
+      )}
+      
+      {loading && courierLocations.length === 0 && !geocodingStatus && (
+        <div className="loading-spinner">
+          Chargement de la carte...
+        </div>
+      )}
+      
+      {checkSiteTypesAndPoles()}
+      
+      <div className="map-actions">
+        <button 
+          className="map-action-button"
+          onClick={geocodeAllSites}
+          disabled={isGeocoding}
+        >
+          <i className="fas fa-map-marker-alt"></i> GÃ©ocoder tous les sites
+        </button>
+        
+        <button 
+          className="map-action-button"
+          onClick={() => {
+            const message = `
+              Pour corriger manuellement les coordonnÃ©es d'un site :
+              1. Cliquez sur l'icÃ´ne de marqueur rouge dans le coin supÃ©rieur gauche de la carte
+              2. Recherchez le site Ã  corriger
+              3. DÃ©placez le marqueur Ã  la position correcte
+              4. Cliquez sur "Enregistrer"
+            `;
+            alert(message);
+          }}
+        >
+          <i className="fas fa-info-circle"></i> Aide correction manuelle
+        </button>
+      </div>
+      
+      <div className="map-container" ref={mapContainerRef}>
+        <MapContainer 
+          center={franceCenter}
+          zoom={6}
+          style={{ height: '100%', width: '100%' }}
+          preferCanvas={true}
+        >
+          <MapReference />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 
+contributors'
+          />
+          
+          <FullscreenControl />
+          <SiteLegend />
+          <MapControls 
+            showLabels={showLabels} 
+            setShowLabels={setShowLabels} 
+            sites={sites} 
+            setSiteFilter={setSiteFilter} 
+            currentFilter={siteFilter}
+            showGeneratedCoordinates={showGeneratedCoordinates}
+            setShowGeneratedCoordinates={setShowGeneratedCoordinates}
+            onZoomToSite={handleZoomToSite}
+          />
+          
+          {/* ContrÃ´le des couches */}
+          <LayersControl position="topright">
+            {/* Fonds de carte */}
+            <LayersControl.BaseLayer checked name="OpenStreetMap">
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> 
+contributors'
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Satellite">
+              <TileLayer
+                
+url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution='&copy; <a href="https://www.esri.com">Esri</a>'
+              />
+            </LayersControl.BaseLayer>
+            
+            {/* Couches de sites */}
+            <LayersControl.Overlay checked name="Tous les sites">
+              <AllSitesLayer 
+                sites={siteFilter ? filteredSites : sites} 
+                icon={siteIcon} 
+                getIconForSiteType={getIconForSiteType}
+                showLabels={showLabels}
+                showGeneratedCoordinates={showGeneratedCoordinates}
+              />
+            </LayersControl.Overlay>
+            
+            {/* SÃ©parateur pour les types de sites */}
+            <LayersControl.Overlay checked name="--- TYPES DE SITES ---">
+              <div />
+            </LayersControl.Overlay>
+            
+            {/* Couches par type de site */}
+            {SITE_TYPES.map(type => (
+              <LayersControl.Overlay checked key={type} name={type}>
+                <SiteTypeLayer 
+                  sites={siteFilter ? filteredSites : sites} 
+                  icon={siteIcon} 
+                  type={type}
+                  getIconForSiteType={getIconForSiteType}
+                  showLabels={showLabels}
+                  showGeneratedCoordinates={showGeneratedCoordinates}
+                />
+              </LayersControl.Overlay>
+            ))}
+            
+            {/* SÃ©parateur pour les pÃ´les */}
+            <LayersControl.Overlay checked name="--- PÃ"LES ---">
+              <div />
+            </LayersControl.Overlay>
+            
+            {/* Couches par pÃ´le */}
+            {POLES.map(pole => (
+              <LayersControl.Overlay checked key={pole} name={`PÃ´le ${pole}`}>
+                <PoleLayer 
+                  sites={siteFilter ? filteredSites : sites} 
+                  icon={siteIcon} 
+                  pole={pole}
+                  getIconForSiteType={getIconForSiteType}
+                  showLabels={showLabels}
+                  showGeneratedCoordinates={showGeneratedCoordinates}
+                />
+              </LayersControl.Overlay>
+            ))}
+            
+            {/* SÃ©parateur pour les coursiers */}
+            <LayersControl.Overlay checked name="--- COURSIERS ---">
+              <div />
+            </LayersControl.Overlay>
+            
+            {/* Couche des coursiers */}
+            <LayersControl.Overlay checked name="Coursiers">
+              <CouriersLayer 
+                courierLocations={courierLocations} 
+                departIcon={departIcon} 
+                arrivalIcon={arrivalIcon}
+                formatDate={formatDate}
+              />
+            </LayersControl.Overlay>
+          </LayersControl>
+          
+          {/* Ajouter le composant d'initialisation des Ã©vÃ©nements des couches */}
+          <LayersEventInitializer />
+        </MapContainer>
+      </div>
+      
+      <div className="courier-list">
+        <h2>Coursiers actifs ({courierLocations.length})</h2>
+        {courierLocations.length === 0 ? (
+          <p>Aucun coursier actif pour le moment</p>
+        ) : (
+          <ul>
+            {courierLocations.map(courier => (
+              <li 
+                key={courier.id} 
+                className={`courier-item ${courier.isArrival ? 'courier-arrival' : 'courier-departure'}`}
+              >
+                <div className="courier-name">{courier.nom}</div>
+                <div className="courier-details">
+                  <span>TournÃ©e: {courier.tourneeName}</span>
+                  <span>Dernier scan: {formatDate(courier.lastScan)}</span>
+                  <span>Site: {courier.siteName}</span>
+                  <span className="courier-status">Statut: {courier.isArrival ? 'ArrivÃ©e' : 
+'DÃ©part'}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Ajouter la mÃ©thode slideTo Ã  L.Marker
+declare module 'leaflet' {
+  interface Marker {
+    slideTo(latlng: L.LatLng, options?: { duration?: number; keepAtCenter?: boolean }): void;
+  }
+}
+
+L.Marker.prototype.slideTo = function(latlng: L.LatLng, options: { duration?: number; keepAtCenter?: 
+boolean } = {}) {
+  const duration = options.duration || 1000;
+  const keepAtCenter = options.keepAtCenter || false;
+  
+  const start = this.getLatLng();
+  const startTime = performance.now();
+  
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    const lat = start.lat + (latlng.lat - start.lat) * progress;
+    const lng = start.lng + (latlng.lng - start.lng) * progress;
+    
+    this.setLatLng([lat, lng]);
+    
+    if (keepAtCenter) {
+      this._map?.setView([lat, lng]);
+    }
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  };
+  
+  requestAnimationFrame(animate);
+};
+
+export default MapView; 
+
+
