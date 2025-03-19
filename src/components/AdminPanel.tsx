@@ -49,12 +49,16 @@ import {
   Build as BuildIcon,
   SaveAlt as SaveAltIcon,
   AdminPanelSettings as AdminPanelSettingsIcon,
-  Map as MapIcon
+  Map as MapIcon,
+  Business as BusinessIcon,
+  MedicalServices as MedicalServicesIcon
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SharePointSync from './SharePointSync';
 import RoleManagement from './RoleManagement';
 import MarkerPreferences from './MarkerPreferences';
+import SELASManagement from './SELASManagement';
+import PoleManagement from './PoleManagement';
 import { useAuth } from '../contexts/AuthContext';
 import { AdminService } from '../services/AdminService';
 import { useSnackbar } from 'notistack';
@@ -120,7 +124,7 @@ const AdminPanel: React.FC = () => {
     const tabParam = searchParams.get('tab');
     if (tabParam !== null) {
       const tabIndex = parseInt(tabParam, 10);
-      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 5) {
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 7) {
         setTabValue(tabIndex);
       }
     }
@@ -382,6 +386,18 @@ const AdminPanel: React.FC = () => {
             label="Préférences de marqueurs" 
             {...a11yProps(5)}
           />
+          <Tab 
+            icon={<MedicalServicesIcon />} 
+            iconPosition="start"
+            label="Gestion SELAS" 
+            {...a11yProps(6)}
+          />
+          <Tab 
+            icon={<BusinessIcon />} 
+            iconPosition="start"
+            label="Gestion Pôles" 
+            {...a11yProps(7)}
+          />
         </Tabs>
       </Box>
 
@@ -579,6 +595,42 @@ const AdminPanel: React.FC = () => {
           <Alert severity="warning" sx={{ mt: 2 }}>
             Vous n'avez pas les droits nécessaires pour accéder à cette fonctionnalité.
             Seuls les utilisateurs avec la permission "Modification des marqueurs" peuvent modifier les préférences de marqueurs.
+          </Alert>
+        )}
+      </TabPanel>
+      
+      {/* Gestion SELAS */}
+      <TabPanel value={tabValue} index={6}>
+        <Typography variant="h5" gutterBottom>
+          Gestion des SELAS
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Gérez les sociétés d'exercice libéral (SELAS) et leurs paramètres.
+        </Alert>
+        {isAdmin ? (
+          <SELASManagement />
+        ) : (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Vous n'avez pas les droits nécessaires pour accéder à cette fonctionnalité.
+            Seuls les administrateurs peuvent gérer les SELAS.
+          </Alert>
+        )}
+      </TabPanel>
+      
+      {/* Gestion Pôles */}
+      <TabPanel value={tabValue} index={7}>
+        <Typography variant="h5" gutterBottom>
+          Gestion des Pôles
+        </Typography>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Gérez les pôles d'activité et leurs associations avec les SELAS.
+        </Alert>
+        {isAdmin ? (
+          <PoleManagement />
+        ) : (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Vous n'avez pas les droits nécessaires pour accéder à cette fonctionnalité.
+            Seuls les administrateurs peuvent gérer les pôles.
           </Alert>
         )}
       </TabPanel>

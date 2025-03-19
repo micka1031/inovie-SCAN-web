@@ -7,6 +7,8 @@ import { fr } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import './EditMode.css';
 import './Vehicules.css';
+import { usePoles } from '../services/PoleService';
+import PoleSelector from './PoleSelector';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -22,6 +24,7 @@ interface Vehicule {
   dernierEntretien?: string;
   coursierAssigne?: string;
   kilometrage: number;
+  pole?: string;
 }
 
 const Vehicules: React.FC = () => {
@@ -55,6 +58,16 @@ const Vehicules: React.FC = () => {
   // État pour la recherche rapide
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredVehicules, setFilteredVehicules] = useState<Vehicule[]>([]);
+
+  // Utilisation du hook usePoles
+  const { poles } = usePoles();
+  
+  // Fonction pour obtenir le nom du pôle
+  const getPoleNameById = (poleId: string | undefined): string => {
+    if (!poleId) return '-';
+    const pole = poles.find(p => p.id === poleId);
+    return pole ? pole.nom : poleId;
+  };
 
   useEffect(() => {
     fetchVehicules();
@@ -163,10 +176,12 @@ const Vehicules: React.FC = () => {
               statut: data.statut || 'actif',
               dernierEntretien: data.dernierEntretien || '',
               coursierAssigne: data.coursierAssigne || '',
-              kilometrage: data.kilometrage || 0
+              kilometrage: data.kilometrage || 0,
+              pole: data.pole || ''
             } as Vehicule;
           });
           
+          console.log("Véhicules récupérés depuis Firestore:", vehiculesData);
           setVehicules(vehiculesData);
         } else {
           // Si la collection est vide, utiliser les données mockées et les ajouter à Firebase
@@ -289,33 +304,33 @@ const Vehicules: React.FC = () => {
   const toggleEditMode = () => {
     if (!editMode) {
       // Si on entre en mode édition, initialiser l'état d'édition avec les véhicules actuels
-      console.log("Entrée en mode édition");
       const initialEditState: {[key: string]: Vehicule} = {};
       vehicules.forEach(vehicule => {
         initialEditState[vehicule.id] = {...vehicule};
       });
+      console.log("État d'édition initial des véhicules:", initialEditState);
       setEditingVehicules(initialEditState);
-      // Réinitialiser les nouveaux véhicules
-      setNewVehicules([]);
       // Activer le mode édition
       setEditMode(true);
+      setNewVehicules([]);
     } else {
       // Si on quitte le mode édition, demander confirmation
       if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
-        console.log("Sauvegarde des modifications avant de quitter le mode édition");
         // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        saveAllChanges().then(() => {
-          // Désélectionner tout et quitter le mode édition
-          setSelectedVehicules([]);
-          setSelectAll(false);
-          setEditMode(false);
-        }).catch(error => {
-          console.error("Erreur lors de la sauvegarde:", error);
-          // Laisser l'utilisateur en mode édition en cas d'erreur
-          alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-        });
+        console.log("État d'édition final des véhicules:", editingVehicules);
+        saveAllChanges()
+          .then(() => {
+            // Désélectionner tout et quitter le mode édition
+            setSelectedVehicules([]);
+            setSelectAll(false);
+            setEditMode(false);
+          })
+          .catch(error => {
+            console.error("Erreur lors de la sauvegarde:", error);
+            // Laisser l'utilisateur en mode édition en cas d'erreur
+            alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
+          });
       } else {
-        console.log("Annulation des modifications et sortie du mode édition");
         // Annuler les modifications et quitter le mode édition
         setEditingVehicules({});
         setNewVehicules([]);
@@ -353,6 +368,7 @@ const Vehicules: React.FC = () => {
           if (vehicule.dernierEntretien !== undefined) updateData.dernierEntretien = vehicule.dernierEntretien;
           if (vehicule.coursierAssigne !== undefined) updateData.coursierAssigne = vehicule.coursierAssigne;
           if (vehicule.kilometrage !== undefined) updateData.kilometrage = vehicule.kilometrage;
+          if (vehicule.pole !== undefined) updateData.pole = vehicule.pole;
           
           // Exclure l'ID du document des données à mettre à jour
           const { id: vehiculeId, ...vehiculeData } = vehicule;
@@ -381,7 +397,8 @@ const Vehicules: React.FC = () => {
             statut: vehicule.statut || 'actif',
             coursierAssigne: vehicule.coursierAssigne || '',
             kilometrage: vehicule.kilometrage || 0,
-            dernierEntretien: vehicule.dernierEntretien || ''
+            dernierEntretien: vehicule.dernierEntretien || '',
+            pole: vehicule.pole || ''
           };
           
           const docRef = await addDoc(collection(db, 'vehicules'), vehiculeToAdd);
@@ -418,6 +435,11 @@ const Vehicules: React.FC = () => {
       } else {
         alert('Modifications enregistrées avec succès');
       }
+      
+      // Désactiver le mode édition après sauvegarde réussie
+      setEditMode(false);
+      setSelectedVehicules([]);
+      setSelectAll(false);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       setError('Erreur lors de la sauvegarde');
@@ -426,6 +448,7 @@ const Vehicules: React.FC = () => {
   };
 
   const handleCellChange = (id: string, field: keyof Vehicule, value: any) => {
+    console.log(`Mise à jour du véhicule ${id}, champ ${field} avec la valeur:`, value);
     setEditingVehicules({
       ...editingVehicules,
       [id]: {
@@ -538,37 +561,7 @@ const Vehicules: React.FC = () => {
     }, 100);
   };
 
-  const handleNewVehiculeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, index: number) => {
-    const { name, value } = e.target;
-    
-    // Extraire le nom du champ à partir de l'attribut name ou utiliser un nom par défaut
-    let fieldName = name;
-    
-    // Si le nom est vide ou commence par "new-vehicule-", extraire le nom du champ
-    if (!fieldName || fieldName.startsWith('new-vehicule-')) {
-      const nameParts = fieldName.split('-');
-      if (nameParts.length >= 4) {
-        fieldName = nameParts[3]; // Prendre la quatrième partie (après "new-vehicule-index-")
-      } else {
-        // Fallback: utiliser un nom basé sur le type d'entrée
-        if (e.target.type === 'date') {
-          fieldName = 'dernierEntretien';
-        } else if (e.target.tagName.toLowerCase() === 'select') {
-          // Déterminer le type de select
-          if (value === 'actif' || value === 'maintenance' || value === 'inactif') {
-            fieldName = 'statut';
-          } else if (value === 'Voiture' || value === 'Utilitaire' || value === 'Camionnette') {
-            fieldName = 'type';
-          }
-        }
-      }
-    }
-    
-    console.log(`Modification du champ ${fieldName} pour le nouveau véhicule ${index} avec la valeur ${value}`);
-    
-    // Convertir les valeurs numériques si nécessaire
-    const parsedValue = fieldName === 'annee' || fieldName === 'kilometrage' ? parseInt(value) : value;
-    
+  const handleNewVehiculeChange = (index: number, field: keyof Vehicule, value: any) => {
     const updatedNewVehicules = [...newVehicules];
     
     // S'assurer que le véhicule existe à cet index
@@ -588,7 +581,7 @@ const Vehicules: React.FC = () => {
     
     updatedNewVehicules[index] = {
       ...updatedNewVehicules[index],
-      [fieldName]: parsedValue
+      [field]: value
     };
     
     setNewVehicules(updatedNewVehicules);
@@ -756,15 +749,16 @@ const Vehicules: React.FC = () => {
           <thead>
             <tr>
               {editMode && (
-                <td>
+                <th>
                   <input 
                     type="checkbox" 
                     checked={selectAll}
                     onChange={handleSelectAllChange}
                     aria-label="Sélectionner tous les véhicules"
                   />
-                </td>
+                </th>
               )}
+              <th>PÔLE</th>
               <th>Immatriculation</th>
               <th>Marque</th>
               <th>Modèle</th>
@@ -784,10 +778,21 @@ const Vehicules: React.FC = () => {
                   {/* Cellule masquée pour maintenir l'alignement */}
                 </td>
                 <td>
+                  <PoleSelector
+                    value={newVehicule.pole || ''}
+                    onChange={(value) => handleNewVehiculeChange(index, 'pole', value)}
+                    placeholder="Sélectionner un pôle"
+                    style={{ width: '100%' }}
+                    showSearch
+                    allowClear
+                    title="Pôle du véhicule"
+                  />
+                </td>
+                <td>
                   <input
                     type="text"
                     value={newVehicule.immatriculation || ''}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'immatriculation', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Immatriculation"
                     aria-label="Immatriculation du nouveau véhicule"
@@ -798,7 +803,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="text"
                     value={newVehicule.marque || ''}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'marque', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Marque"
                     aria-label="Marque du nouveau véhicule"
@@ -809,7 +814,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="text"
                     value={newVehicule.modele || ''}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'modele', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Modèle"
                     aria-label="Modèle du nouveau véhicule"
@@ -819,7 +824,7 @@ const Vehicules: React.FC = () => {
                 <td>
                   <select
                     value={newVehicule.type || 'Voiture'}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'type', e.target.value)}
                     className="inline-edit-select"
                     aria-label="Type du nouveau véhicule"
                     name={`new-vehicule-${index}-type`}
@@ -833,7 +838,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="number"
                     value={newVehicule.annee || new Date().getFullYear()}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'annee', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Année"
                     aria-label="Année du nouveau véhicule"
@@ -843,7 +848,7 @@ const Vehicules: React.FC = () => {
                 <td>
                   <select
                     value={newVehicule.statut || 'actif'}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'statut', e.target.value)}
                     className="inline-edit-select"
                     aria-label="Statut du nouveau véhicule"
                     name={`new-vehicule-${index}-statut`}
@@ -857,7 +862,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="date"
                     value={newVehicule.dernierEntretien || ''}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'dernierEntretien', e.target.value)}
                     className="inline-edit-input"
                     aria-label="Date du dernier entretien du nouveau véhicule"
                     name={`new-vehicule-${index}-dernierEntretien`}
@@ -867,7 +872,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="text"
                     value={newVehicule.coursierAssigne || ''}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'coursierAssigne', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Coursier"
                     aria-label="Coursier assigné au nouveau véhicule"
@@ -878,7 +883,7 @@ const Vehicules: React.FC = () => {
                   <input
                     type="number"
                     value={newVehicule.kilometrage || 0}
-                    onChange={(e) => handleNewVehiculeChange(e, index)}
+                    onChange={(e) => handleNewVehiculeChange(index, 'kilometrage', e.target.value)}
                     className="inline-edit-input"
                     placeholder="Kilométrage"
                     aria-label="Kilométrage du nouveau véhicule"
@@ -902,13 +907,27 @@ const Vehicules: React.FC = () => {
                 )}
                 <td>
                   {editMode ? (
+                    <PoleSelector
+                      value={editingVehicules[vehicule.id]?.pole || vehicule.pole || ''}
+                      onChange={(value) => handleCellChange(vehicule.id, 'pole', value)}
+                      placeholder="Sélectionner un pôle"
+                      style={{ width: '100%' }}
+                      showSearch
+                      allowClear
+                      title="Pôle du véhicule"
+                    />
+                  ) : (
+                    getPoleNameById(vehicule.pole)
+                  )}
+                </td>
+                <td>
+                  {editMode ? (
                     <input
                       type="text"
                       value={editingVehicules[vehicule.id]?.immatriculation || vehicule.immatriculation}
-                      onChange={(e) => handleEditInputChange(e, vehicule.id)}
+                      onChange={(e) => handleCellChange(vehicule.id, 'immatriculation', e.target.value)}
                       className="inline-edit-input"
-                      aria-label={`Modifier l'immatriculation du véhicule ${vehicule.immatriculation}`}
-                      name={`vehicule-${vehicule.id}-immatriculation`}
+                      placeholder="Immatriculation"
                     />
                   ) : (
                     vehicule.immatriculation || '-'
@@ -919,10 +938,9 @@ const Vehicules: React.FC = () => {
                     <input
                       type="text"
                       value={editingVehicules[vehicule.id]?.marque || vehicule.marque}
-                      onChange={(e) => handleEditInputChange(e, vehicule.id)}
+                      onChange={(e) => handleCellChange(vehicule.id, 'marque', e.target.value)}
                       className="inline-edit-input"
-                      aria-label={`Modifier la marque du véhicule ${vehicule.immatriculation}`}
-                      name={`vehicule-${vehicule.id}-marque`}
+                      placeholder="Marque"
                     />
                   ) : (
                     vehicule.marque || '-'
@@ -933,10 +951,9 @@ const Vehicules: React.FC = () => {
                     <input
                       type="text"
                       value={editingVehicules[vehicule.id]?.modele || vehicule.modele}
-                      onChange={(e) => handleEditInputChange(e, vehicule.id)}
+                      onChange={(e) => handleCellChange(vehicule.id, 'modele', e.target.value)}
                       className="inline-edit-input"
-                      aria-label={`Modifier le modèle du véhicule ${vehicule.immatriculation}`}
-                      name={`vehicule-${vehicule.id}-modele`}
+                      placeholder="Modèle"
                     />
                   ) : (
                     vehicule.modele || '-'
@@ -946,10 +963,9 @@ const Vehicules: React.FC = () => {
                   {editMode ? (
                     <select
                       value={editingVehicules[vehicule.id]?.type || vehicule.type}
-                      onChange={(e) => handleEditInputChange(e, vehicule.id)}
+                      onChange={(e) => handleCellChange(vehicule.id, 'type', e.target.value)}
                       className="inline-edit-select"
                       aria-label={`Modifier le type du véhicule ${vehicule.immatriculation}`}
-                      name={`vehicule-${vehicule.id}-type`}
                     >
                       <option value="Voiture">Voiture</option>
                       <option value="Utilitaire">Utilitaire</option>

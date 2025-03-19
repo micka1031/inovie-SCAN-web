@@ -29,6 +29,8 @@ import { geocodeAddress } from '../utils/geocoding';
 import { Site } from '../types/index';
 import './EditMode.css';
 import './Sites.css';
+import PoleSelector from './PoleSelector';
+import { usePoles } from '../services/PoleService';
 
 // Désactiver le suivi de structure et de chronologie pour améliorer les performances
 const disableStructuralAndChronologicalTracking = async () => {
@@ -84,6 +86,16 @@ const Sites: React.FC = () => {
   
   // Options pour le nombre d'éléments par page
   const itemsPerPageOptions = [20, 30, 50, 100, 'Tous'];
+
+  // Ajoutez le hook usePoles
+  const { poles } = usePoles();
+
+  // Fonction pour convertir ID de pôle en nom
+  const getPoleNameById = (poleId: string | undefined): string => {
+    if (!poleId) return '';
+    const pole = poles.find(p => p.id === poleId);
+    return pole ? pole.nom : poleId;
+  };
 
   useEffect(() => {
     fetchSites();
@@ -1289,12 +1301,14 @@ const Sites: React.FC = () => {
                   {/* Cellule masquée pour maintenir l'alignement */}
                 </td>
                 <td>
-                  <input
-                    type="text"
+                  <PoleSelector
                     value={site.pole || ''}
-                    onChange={(e) => handleNewSiteChange(index, 'pole', e.target.value)}
-                    className="inline-edit-input"
-                    title="Pôle"
+                    onChange={(value) => handleNewSiteChange(index, 'pole', value)}
+                    placeholder="Sélectionner un pôle"
+                    style={{ width: '100%' }}
+                    showSearch
+                    allowClear
+                    title="Pôle du site"
                   />
                 </td>
                 <td>
@@ -1429,15 +1443,17 @@ const Sites: React.FC = () => {
                 )}
                 <td>
                   {editMode ? (
-                    <input
-                      type="text"
+                    <PoleSelector
                       value={editingSites[site.id]?.pole || site.pole || ''}
-                      onChange={(e) => handleCellChange(site.id, 'pole', e.target.value)}
-                      className="inline-edit-input"
-                      title="Pôle"
+                      onChange={(value) => handleCellChange(site.id, 'pole', value)}
+                      placeholder="Sélectionner un pôle"
+                      style={{ width: '100%' }}
+                      showSearch
+                      allowClear
+                      title="Pôle du site"
                     />
                   ) : (
-                    site.pole || ''
+                    getPoleNameById(site.pole)
                   )}
                 </td>
                 <td>

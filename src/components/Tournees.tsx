@@ -25,6 +25,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import './EditMode.css';
 import './Tournees.css';
 import ReactDOM from 'react-dom';
+import { usePoles } from '../services/PoleService';
+import PoleSelector from './PoleSelector';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -41,6 +43,7 @@ interface Tournee {
   nombreColis: number;
   statut: 'en_attente' | 'en_cours' | 'terminee' | 'annulee';
   siteDepart: string;
+  pole?: string;
 }
 
 interface Vehicule {
@@ -86,6 +89,16 @@ const Tournees: React.FC = () => {
   // État pour la recherche rapide
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredTournees, setFilteredTournees] = useState<Tournee[]>([]);
+
+  // Utilisation du hook usePoles
+  const { poles } = usePoles();
+  
+  // Fonction pour obtenir le nom du pôle
+  const getPoleNameById = (poleId: string | undefined): string => {
+    if (!poleId) return '-';
+    const pole = poles.find(p => p.id === poleId);
+    return pole ? pole.nom : poleId;
+  };
 
   useEffect(() => {
     fetchTournees();
@@ -154,9 +167,12 @@ const Tournees: React.FC = () => {
             vehicules: data?.vehicules || [],
             nombreColis: data?.nombreColis || 0,
             statut: data?.statut || 'en_attente',
+            pole: data?.pole || '',
+            siteDepart: data?.siteDepart || ''
           };
         });
         
+        console.log("Tournées récupérées depuis Firestore:", tourneesData);
         setTournees(tourneesData);
       }
       
@@ -307,6 +323,7 @@ const Tournees: React.FC = () => {
       tournees.forEach(tournee => {
         initialEditState[tournee.id] = {...tournee};
       });
+      console.log("État d'édition initial des tournées:", initialEditState);
       setEditingTournees(initialEditState);
       // Réinitialiser les nouvelles tournées
       setNewTournees([]);
@@ -316,17 +333,20 @@ const Tournees: React.FC = () => {
       // Si on quitte le mode édition, demander confirmation
       if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
         console.log("Sauvegarde des modifications avant de quitter le mode édition");
+        console.log("État d'édition final des tournées:", editingTournees);
         // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        saveAllChanges().then(() => {
-          // Désélectionner tout et quitter le mode édition
-          setSelectedTournees([]);
-          setSelectAll(false);
-          setEditMode(false);
-        }).catch(error => {
-          console.error("Erreur lors de la sauvegarde:", error);
-          // Laisser l'utilisateur en mode édition en cas d'erreur
-          alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-        });
+        saveAllChanges()
+          .then(() => {
+            // Désélectionner tout et quitter le mode édition
+            setSelectedTournees([]);
+            setSelectAll(false);
+            setEditMode(false);
+          })
+          .catch(error => {
+            console.error("Erreur lors de la sauvegarde:", error);
+            // Laisser l'utilisateur en mode édition en cas d'erreur
+            alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
+          });
       } else {
         console.log("Annulation des modifications et sortie du mode édition");
         // Annuler les modifications et quitter le mode édition
@@ -484,6 +504,7 @@ const Tournees: React.FC = () => {
           if (tournee.vehicules !== undefined) updateData.vehicules = tournee.vehicules;
           if (tournee.nombreColis !== undefined) updateData.nombreColis = tournee.nombreColis;
           if (tournee.statut !== undefined) updateData.statut = tournee.statut;
+          if (tournee.pole !== undefined) updateData.pole = tournee.pole;
           
           await updateDoc(doc(db, 'tournees', id), updateData);
           console.log(`Tournée ${id} mise à jour avec succès`);
@@ -545,6 +566,11 @@ const Tournees: React.FC = () => {
         alert('Modifications enregistrées avec succès');
       }
       
+      // Désactiver le mode édition après sauvegarde réussie
+      setEditMode(false);
+      setSelectedTournees([]);
+      setSelectAll(false);
+      
       console.log('Toutes les modifications ont été enregistrées avec succès');
       return true;
     } catch (error) {
@@ -555,6 +581,7 @@ const Tournees: React.FC = () => {
   };
 
   const handleCellChange = (id: string, field: keyof Tournee, value: any) => {
+    console.log(`Mise à jour de la tournée ${id}, champ ${field} avec la valeur:`, value);
     setEditingTournees({
       ...editingTournees,
       [id]: {
@@ -706,6 +733,7 @@ const Tournees: React.FC = () => {
                   />
                 </th>
               )}
+              <th>PÔLE</th>
               <th>Nom</th>
               <th>Heure de Départ</th>
               <th>Heure d'Arrivée</th>
@@ -719,6 +747,17 @@ const Tournees: React.FC = () => {
               <tr key={newTournee.id} className="new-tournee-row">
                 <td style={{display: 'none'}}>
                   {/* Cellule masquée pour maintenir l'alignement */}
+                </td>
+                <td>
+                  <PoleSelector
+                    value={newTournee.pole || ''}
+                    onChange={(value) => handleNewTourneeChange(index, 'pole', value)}
+                    placeholder="Sélectionner un pôle"
+                    style={{ width: '100%' }}
+                    showSearch
+                    allowClear
+                    title="Pôle de la tournée"
+                  />
                 </td>
                 <td>
                   <input
@@ -859,6 +898,21 @@ const Tournees: React.FC = () => {
                     />
                   </td>
                 )}
+                <td>
+                  {editMode ? (
+                    <PoleSelector
+                      value={editingTournees[tournee.id]?.pole || tournee.pole || ''}
+                      onChange={(value) => handleCellChange(tournee.id, 'pole', value)}
+                      placeholder="Sélectionner un pôle"
+                      style={{ width: '100%' }}
+                      showSearch
+                      allowClear
+                      title="Pôle de la tournée"
+                    />
+                  ) : (
+                    getPoleNameById(tournee.pole)
+                  )}
+                </td>
                 <td>
                   {editMode ? (
                     <input

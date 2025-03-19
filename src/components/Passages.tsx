@@ -7,6 +7,8 @@ import { fr } from 'date-fns/locale/fr';
 import "react-datepicker/dist/react-datepicker.css";
 import './Passages.css';
 import './EditMode.css';
+import { usePoles } from '../services/PoleService';
+import PoleSelector from './PoleSelector';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -124,6 +126,7 @@ interface Passage {
   tourneeId?: string;
   heureDebut?: string;
   heureFin?: string;
+  pole?: string;
 }
 
 interface Tournee {
@@ -191,6 +194,9 @@ const Passages: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [selectedPassages, setSelectedPassages] = useState<string[]>([]);
   const [editingPassages, setEditingPassages] = useState<{[key: string]: Passage}>({});
+
+  // Utilisation du hook usePoles
+  const { poles } = usePoles();
 
   useEffect(() => {
     fetchPassages();
@@ -354,7 +360,8 @@ const Passages: React.FC = () => {
           coursierChargement: data.coursierCharg || data.coursierChargement || '',
           coursierLivraison: data.coursierLivraison || '',
           vehiculeId: data.véhicule || data.vehiculeId || '',
-          tourneeId: data.tournée || data.tourneeId || ''
+          tourneeId: data.tournée || data.tourneeId || '',
+          pole: data.pole || '',
         } as Passage;
         
         return normalizedData;
@@ -592,6 +599,13 @@ const Passages: React.FC = () => {
     return `${day}/${month}/${year}`;
   };
 
+  // Fonction pour obtenir le nom du pôle
+  const getPoleNameById = (poleId: string | undefined): string => {
+    if (!poleId) return '-';
+    const pole = poles.find(p => p.id === poleId);
+    return pole ? pole.nom : poleId;
+  };
+
   const handleSearch = () => {
     console.log('Recherche démarrée avec les critères suivants:');
     console.log('Date début:', dateDebut);
@@ -758,6 +772,7 @@ const Passages: React.FC = () => {
           if (passage.coursierLivraison !== undefined) updateData.coursierLivraison = passage.coursierLivraison;
           if (passage.vehiculeId !== undefined) updateData.vehiculeId = passage.vehiculeId;
           if (passage.tourneeId !== undefined) updateData.tourneeId = passage.tourneeId;
+          if (passage.pole !== undefined) updateData.pole = passage.pole;
 
           await updateDoc(doc(db, 'passages', id), updateData);
           console.log(`Passage ${id} mis à jour avec succès`);
@@ -1157,19 +1172,32 @@ const Passages: React.FC = () => {
           <table className="data-table">
             <thead>
               <tr>
-                {editMode && <th style={{ width: '40px' }}>Sélection</th>}
-                <th>SITE DÉPART</th>
-                <th>Date départ</th>
-                <th>Heure départ</th>
-                <th>ID Colis</th>
-                <th>Statut</th>
-                <th>SITE FIN</th>
-                <th>Date fin</th>
-                <th>Heure fin</th>
-                <th>Coursier chargement</th>
-                <th>Coursier livraison</th>
-                <th>Tournées</th>
-                <th>Véhicules</th>
+                {editMode && (
+                  <th>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedPassages.length === filteredPassages.length} 
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedPassages(filteredPassages.map(passage => passage.id));
+                        } else {
+                          setSelectedPassages([]);
+                        }
+                      }}
+                      title="Sélectionner/Désélectionner tous les passages"
+                      aria-label="Sélectionner tous les passages"
+                    />
+                  </th>
+                )}
+                <th>PÔLE</th>
+                <th>Site de départ</th>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Status</th>
+                <th>Site d'arrivée</th>
+                <th>Véhicule</th>
+                <th>Coursier</th>
+                <th>Commentaire</th>
               </tr>
             </thead>
             <tbody>
@@ -1181,29 +1209,45 @@ const Passages: React.FC = () => {
                         type="checkbox" 
                         checked={selectedPassages.includes(passage.id)} 
                         onChange={() => togglePassageSelection(passage.id)}
+                        title={`Sélectionner le passage ${passage.id}`}
+                        aria-label={`Sélectionner le passage ${passage.id}`}
                       />
                     </td>
                   )}
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
+                    {editMode ? (
+                      <PoleSelector
+                        value={editingPassages[passage.id]?.pole || passage.pole || ''}
+                        onChange={(value) => handleCellChange(passage.id, 'pole', value)}
+                        placeholder="Sélectionner un pôle"
+                        style={{ width: '100%' }}
+                        showSearch
+                        allowClear
+                        title="Pôle du passage"
+                      />
+                    ) : (
+                      getPoleNameById(passage.pole)
+                    )}
+                  </td>
+                  <td>
                     {editMode ? (
                       <select
                         value={editingPassages[passage.id]?.siteDepart || passage.siteDepart}
                         onChange={(e) => handleCellChange(passage.id, 'siteDepart', e.target.value)}
                         className="inline-edit-select"
-                        onClick={(e) => e.stopPropagation()}
+                        title="Sélectionner un site de départ"
+                        aria-label="Site de départ"
                       >
                         <option value="">Sélectionner un site</option>
                         {sites.map(site => (
-                          <option key={site.id} value={site.nom}>
-                            {site.nom}
-                          </option>
+                          <option key={site.id} value={site.id}>{site.nom}</option>
                         ))}
                       </select>
                     ) : (
                       getSiteName(passage.siteDepart)
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <input 
                         type="date" 
@@ -1219,7 +1263,7 @@ const Passages: React.FC = () => {
                       formatDateFr(convertTimestampToDate(passage.dateHeureDepart))
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <input 
                         type="time" 
@@ -1237,25 +1281,13 @@ const Passages: React.FC = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      convertTimestampToDate(passage.dateHeureDepart)?.toLocaleTimeString('fr-FR', {
+                      passage.dateHeureDepart ? convertTimestampToDate(passage.dateHeureDepart)?.toLocaleTimeString('fr-FR', {
                         hour: '2-digit',
                         minute: '2-digit'
-                      })
+                      }) : ''
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
-                    {editMode ? (
-                      <input 
-                        type="text" 
-                        value={editingPassages[passage.id]?.idColis || passage.idColis}
-                        onChange={(e) => handleCellChange(passage.id, 'idColis', e.target.value)}
-                        className="inline-edit-input"
-                      />
-                    ) : (
-                      passage.idColis
-                    )}
-                  </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <select
                         value={editingPassages[passage.id]?.statut || passage.statut}
@@ -1271,7 +1303,7 @@ const Passages: React.FC = () => {
                       </span>
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <select
                         value={editingPassages[passage.id]?.siteFin || passage.siteFin}
@@ -1289,47 +1321,7 @@ const Passages: React.FC = () => {
                       getSiteName(passage.siteFin)
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
-                    {editMode ? (
-                      <input 
-                        type="date" 
-                        value={formatDateForInput(convertTimestampToDate(editingPassages[passage.id]?.dateHeureFin || passage.dateHeureFin))}
-                        onChange={(e) => {
-                          const newDate = new Date(e.target.value);
-                          handleCellChange(passage.id, 'dateHeureFin', Timestamp.fromDate(newDate));
-                        }}
-                        className="inline-edit-input"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      passage.dateHeureFin ? formatDateFr(convertTimestampToDate(passage.dateHeureFin)) : ''
-                    )}
-                  </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
-                    {editMode ? (
-                      <input 
-                        type="time" 
-                        value={convertTimestampToTime(editingPassages[passage.id]?.dateHeureFin || passage.dateHeureFin)}
-                        onChange={(e) => {
-                          // Préserver la date mais changer l'heure
-                          const currentDate = convertTimestampToDate(editingPassages[passage.id]?.dateHeureFin || passage.dateHeureFin);
-                          if (currentDate) {
-                            const [hours, minutes] = e.target.value.split(':').map(Number);
-                            currentDate.setHours(hours, minutes);
-                            handleCellChange(passage.id, 'dateHeureFin', Timestamp.fromDate(currentDate));
-                          }
-                        }}
-                        className="inline-edit-input"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      passage.dateHeureFin ? convertTimestampToDate(passage.dateHeureFin)?.toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : ''
-                    )}
-                  </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <input 
                         type="text" 
@@ -1341,7 +1333,7 @@ const Passages: React.FC = () => {
                       passage.coursierChargement || '-'
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <input 
                         type="text" 
@@ -1353,7 +1345,7 @@ const Passages: React.FC = () => {
                       passage.coursierLivraison || '-'
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <select
                         value={editingPassages[passage.id]?.tourneeId || passage.tourneeId}
@@ -1371,7 +1363,7 @@ const Passages: React.FC = () => {
                       getTourneeName(passage.tourneeId)
                     )}
                   </td>
-                  <td onClick={editMode ? () => togglePassageSelection(passage.id) : undefined} style={editMode ? { cursor: 'pointer' } : {}}>
+                  <td>
                     {editMode ? (
                       <select
                         value={editingPassages[passage.id]?.vehiculeId || passage.vehiculeId}

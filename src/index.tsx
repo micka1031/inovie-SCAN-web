@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+// Ant Design 5.x utilise une méthode différente pour les styles
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 

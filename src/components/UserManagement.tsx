@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, getDocs, updateDoc, deleteDoc, doc, getDoc, addDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth, PRODUCTION_URL } from '../firebase';
@@ -10,9 +10,12 @@ import { useAuth } from '../contexts/AuthContext';
 import ProtectedRoute from './ProtectedRoute';
 import { PAGES } from '../utils/pageAccessUtils';
 import { roles } from '../services/RoleService';
-
-// Importer et étendre l'interface User existante
-import { User as ImportedUser } from '../types/roles';
+import { User as ImportedUser } from '../types/User';
+import { Role as ImportedRole } from '../types/roles';
+import { RolePermissions } from '../utils/permissions';
+import { UserRole } from '../types/roles';
+import PoleSelector from './PoleSelector';
+import { usePoles } from '../services/PoleService';
 
 // Étendre l'interface User importée
 type User = ImportedUser & {
@@ -38,6 +41,7 @@ const UserManagement: React.FC = () => {
 
   const roleService = RoleService.getInstance();
   const { currentUser, hasPermission } = useAuth();
+  const { poles } = usePoles();
 
   useEffect(() => {
     const initialize = async () => {
@@ -236,16 +240,18 @@ const UserManagement: React.FC = () => {
       if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
         console.log("Sauvegarde des modifications avant de quitter le mode édition");
         // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        saveAllChanges().then(() => {
-          // Désélectionner tout et quitter le mode édition
-          setSelectedUsers([]);
-          setNewUser(null);
-          setEditMode(false);
-        }).catch(error => {
-          console.error("Erreur lors de la sauvegarde:", error);
-          // Laisser l'utilisateur en mode édition en cas d'erreur
-          alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-        });
+        saveAllChanges()
+          .then(() => {
+            // Désélectionner tout et quitter le mode édition
+            setSelectedUsers([]);
+            setNewUser(null);
+            setEditMode(false);
+          })
+          .catch(error => {
+            console.error("Erreur lors de la sauvegarde:", error);
+            // Laisser l'utilisateur en mode édition en cas d'erreur
+            alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
+          });
       } else {
         console.log("Annulation des modifications et sortie du mode édition");
         // Annuler les modifications et quitter le mode édition
@@ -550,6 +556,10 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
       setEditingUsers({});
       setNewUser(null);
       
+      // Désactiver le mode édition après sauvegarde réussie
+      setEditMode(false);
+      setSelectedUsers([]);
+      
       if (rejected > 0) {
         alert(`Modifications partiellement enregistrées. ${rejected} opérations ont échoué.`);
       } else {
@@ -619,6 +629,13 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
       setSelectedUsers([]);
       setEditMode(false);
     }
+  };
+
+  // Fonction pour convertir ID de pôle en nom
+  const getPoleNameById = (poleId: string | undefined): string => {
+    if (!poleId) return '-';
+    const pole = poles.find(p => p.id === poleId);
+    return pole ? pole.nom : poleId;
   };
 
   if (loading) {
@@ -778,6 +795,7 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
                       value={newUser.role || ''}
                       onChange={(e) => handleNewUserChange('role', e.target.value)}
                       className="inline-edit-select"
+                      title="Rôle de l'utilisateur"
                     >
                       <option value="">Sélectionner un rôle</option>
                       {roles
@@ -789,12 +807,14 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
                     </select>
                   </td>
                   <td>
-                    <input
-                      type="text"
+                    <PoleSelector
                       value={newUser.pole || ''}
-                      onChange={(e) => handleNewUserChange('pole', e.target.value)}
-                      className="inline-edit-input"
-                      placeholder="Pôle"
+                      onChange={(value) => handleNewUserChange('pole', value)}
+                      placeholder="Sélectionner un pôle"
+                      style={{ width: '100%' }}
+                      showSearch
+                      allowClear
+                      title="Pôle de l'utilisateur"
                     />
                   </td>
                   <td>
@@ -802,6 +822,7 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
                       value={newUser.statut || 'Actif'}
                       onChange={(e) => handleNewUserChange('statut', e.target.value)}
                       className="inline-edit-select"
+                      title="Statut de l'utilisateur"
                     >
                       <option value="Actif">Actif</option>
                       <option value="Inactif">Inactif</option>
@@ -911,17 +932,17 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
                   </td>
                   <td>
                     {editMode ? (
-                      <input 
-                        type="text" 
-                        value={editingUsers[user.id!]?.pole || user.pole}
-                        onChange={(e) => handleEditChange(user.id!, 'pole', e.target.value)}
-                        className="inline-edit-input"
+                      <PoleSelector
+                        value={editingUsers[user.id!]?.pole || user.pole || ''}
+                        onChange={(value) => handleEditChange(user.id!, 'pole', value)}
+                        placeholder="Sélectionner un pôle"
+                        style={{ width: '100%' }}
+                        showSearch
+                        allowClear
                         title="Pôle de l'utilisateur"
-                        aria-label="Modifier le pôle de l'utilisateur"
-                        placeholder="Pôle"
                       />
                     ) : (
-                      user.pole
+                      getPoleNameById(user.pole)
                     )}
                   </td>
                   <td>

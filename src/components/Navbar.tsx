@@ -8,6 +8,7 @@ import { generateTempPassword } from '../services/userService';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { RoleService, canAccessPage, getRoleByName } from '../services/RoleService';
 import { PAGES } from '../utils/pageAccessUtils';
+import SELASSelector from './SELASSelector';
 
 interface NavbarProps {
   user: {
@@ -221,6 +222,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         </div>
         
         <div className="user-container" style={{ display: 'flex', alignItems: 'center' }}>
+          {/* Intégration du sélecteur SELAS */}
+          {userRole === 'Administrateur' && <SELASSelector />}
+          
           <div className="user-info">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0033a0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>

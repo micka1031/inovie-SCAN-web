@@ -1,6 +1,7 @@
 import React, { useEffect, Suspense, useState, useCallback } from 'react';
 import { createBrowserRouter, RouterProvider, Outlet, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SelasProvider } from './contexts/SelasContext';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
 import Passages from './components/Passages';
@@ -115,12 +116,14 @@ const App: React.FC = () => {
 
   return (
     <AuthProvider>
-      <SnackbarProvider maxSnack={3}>
-        <RouterProvider 
-          router={router} 
-          future={{ v7_startTransition: true }}
-        />
-      </SnackbarProvider>
+      <SelasProvider>
+        <SnackbarProvider maxSnack={3}>
+          <RouterProvider 
+            router={router} 
+            future={{ v7_startTransition: true }}
+          />
+        </SnackbarProvider>
+      </SelasProvider>
     </AuthProvider>
   );
 };

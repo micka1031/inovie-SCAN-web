@@ -1,0 +1,62 @@
+.pole-filter-container {
+  margin: 10px 0;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.pole-filter-select {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Style spécifique pour le menu déroulant */
+.MuiSelect-select:focus {
+  background-color: rgba(0, 51, 160, 0.05) !important;
+}
+
+/* Style pour l'élément sélectionné */
+.MuiMenuItem-root.Mui-selected {
+  background-color: rgba(0, 51, 160, 0.1) !important;
+  font-weight: 500;
+}
+
+.MuiMenuItem-root:hover {
+  background-color: rgba(0, 51, 160, 0.05) !important;
+}
+
+/* Style pour le contour du select quand il est focus */
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #0033a0 !important;
+}
+
+/* Style pour le label */
+.MuiInputLabel-root.Mui-focused {
+  color: #0033a0 !important;
+}
+
+/* Style global pour le conteneur du filtre */
+.pole-filter-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pole-filter-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* Pour le filtre dans la barre d'outils */
+.toolbar-filter {
+  margin-left: auto;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .pole-filter-container {
+    min-width: 150px;
+  }
+} 
