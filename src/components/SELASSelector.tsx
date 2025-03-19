@@ -4,7 +4,7 @@ import { useSelasContext } from '../contexts/SelasContext';
 import { getAuth } from 'firebase/auth';
 import { collection, getDocs, doc, updateDoc, writeBatch, query, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import './SelasSelector.css';
+import './SELASSelector.css';
 
 const SelasSelector: React.FC = () => {
   const { currentSelasId, setCurrentSelasId, availableSelas, loading } = useSelasContext();
