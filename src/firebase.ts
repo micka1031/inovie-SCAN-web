@@ -20,6 +20,14 @@ import {
     CACHE_SIZE_UNLIMITED,
     setLogLevel
 } from 'firebase/firestore';
+import {
+    getStorage,
+    ref,
+    uploadBytesResumable,
+    getDownloadURL,
+    listAll,
+    deleteObject
+} from 'firebase/storage';
 
 // Configuration Firebase sécurisée
 const firebaseConfig = {
@@ -162,6 +170,9 @@ const firestoreSettings = {
 
 // Initialiser Firestore avec les paramètres avancés
 const db = initializeFirestore(app, firestoreSettings);
+
+// Initialiser Firebase Storage
+const storage = getStorage(app);
 
 // Get Firebase services
 const auth = getAuth(app);
@@ -420,6 +431,7 @@ export {
     app, 
     auth, 
     db,
+    storage,
     loginUser,
     autoLogin,
     debugAuthState,

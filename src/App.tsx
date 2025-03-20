@@ -8,7 +8,6 @@ import Passages from './components/Passages';
 import Sites from './components/Sites';
 import Tournees from './components/Tournees';
 import Vehicules from './components/Vehicules';
-import VehiculesTanStack from './components/VehiculesTanStack';
 import UserManagement from './components/UserManagement';
 import InitPassages from './components/InitPassages';
 import MapView from './components/MapView';
@@ -17,6 +16,7 @@ import MarkerPreferences from './components/MarkerPreferences';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import AdminPanel from './components/AdminPanel';
+import VehicleManagement from './pages/VehicleManagement';
 import './App.css';
 import { SnackbarProvider } from 'notistack';
 import LoadingScreen from './components/LoadingScreen';
@@ -275,20 +275,6 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
           )
         },
         {
-          path: 'vehicules-tanstack',
-          element: (
-            <ProtectedRoute 
-              userRole={userRole} 
-              allowedRoles={['Administrateur', 'Utilisateur', 'default']}
-              requiredPermissions={['vehicules.view']}
-              pageName={PAGES.VEHICULES}
-              roles={roles}
-            >
-              <VehiculesTanStack />
-            </ProtectedRoute>
-          )
-        },
-        {
           path: 'admin/users',
           element: (
             <ProtectedRoute 
@@ -355,6 +341,20 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               roles={roles}
             >
               <Navigate to="/admin?tab=5" replace />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'vehicles',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'default']}
+              requiredPermissions={['vehicules.view']}
+              pageName={PAGES.VEHICULES}
+              roles={roles}
+            >
+              <VehicleManagement />
             </ProtectedRoute>
           )
         },

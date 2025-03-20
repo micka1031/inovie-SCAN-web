@@ -6,7 +6,6 @@ interface PageAccess {
   sites?: boolean;
   tournees?: boolean;
   vehicules?: boolean;
-  vehiculesTanstack?: boolean;
   carte?: boolean;
   userManagement?: boolean;
   administration?: boolean;
@@ -21,7 +20,6 @@ export type PageName =
   | 'sites'
   | 'tournees'
   | 'vehicules'
-  | 'vehiculesTanstack'
   | 'carte'
   | 'userManagement'
   | 'administration'
@@ -35,7 +33,6 @@ export const PAGES = {
   SITES: 'sites',
   TOURNEES: 'tournees',
   VEHICULES: 'vehicules',
-  VEHICULES_TANSTACK: 'vehiculesTanstack',
   CARTE: 'carte',
   USER_MANAGEMENT: 'userManagement',
   ADMINISTRATION: 'administration',

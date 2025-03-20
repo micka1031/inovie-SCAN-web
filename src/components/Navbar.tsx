@@ -14,8 +14,7 @@ import {
   LocalShipping, 
   DirectionsCar, 
   LocationOn, 
-  People,
-  TableChart
+  People
 } from '@mui/icons-material';
 
 interface NavbarProps {
@@ -222,11 +221,11 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   
   const navigationItems = [
     {
-      path: '/vehicules-tanstack',
-      label: 'Véhicules (TanStack)',
-      icon: <TableChart />,
-      requiredPermission: 'vehicules.view'
-    },
+      path: '/vehicles',
+      label: 'Gestion des Véhicules',
+      icon: <DirectionsCar />,
+      requiredPermission: 'vehicles.view'
+    }
   ];
   
   return (
@@ -352,25 +351,16 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         )}
         
         {pageAccess.vehicules && (
-          <Link to="/vehicules" className={`nav-item ${location.pathname === '/vehicules' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
-              <circle cx="7" cy="17" r="2"></circle>
-              <circle cx="17" cy="17" r="2"></circle>
-            </svg>
-            Véhicules
-          </Link>
-        )}
-        
-        {pageAccess.vehicules && (
-          <Link to="/vehicules-tanstack" className={`nav-item ${location.pathname === '/vehicules-tanstack' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
-              <circle cx="7" cy="17" r="2"></circle>
-              <circle cx="17" cy="17" r="2"></circle>
-            </svg>
-            Véhicules (TanStack)
-          </Link>
+          <>
+            <Link to="/vehicles" className={`nav-item ${location.pathname === '/vehicles' ? 'active' : ''}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
+                <circle cx="7" cy="17" r="2"></circle>
+                <circle cx="17" cy="17" r="2"></circle>
+              </svg>
+              Gestion des Véhicules
+            </Link>
+          </>
         )}
         
         {pageAccess.map && (
