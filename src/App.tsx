@@ -9,6 +9,7 @@ import Sites from './components/Sites';
 import Tournees from './components/Tournees';
 import Vehicules from './components/Vehicules';
 import VehiculesMUI from './components/VehiculesMUI';
+import VehiculesMUISimple from './components/VehiculesMUISimple';
 import VehiculesMaterialTable from './components/VehiculesMaterialTable';
 import UserManagement from './components/UserManagement';
 import InitPassages from './components/InitPassages';
@@ -286,6 +287,20 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               roles={roles}
             >
               <VehiculesMUI />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'vehicules-simple',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'default']}
+              requiredPermissions={['vehicules.view']}
+              pageName={PAGES.VEHICULES_ADVANCED}
+              roles={roles}
+            >
+              <VehiculesMUISimple />
             </ProtectedRoute>
           )
         },

@@ -8,7 +8,8 @@ import {
   GridValueFormatter,
   GridRenderCellParams,
   GridRowSelectionModel,
-  GridRowModel
+  GridRowModel,
+  GridRowId
 } from '@mui/x-data-grid';
 import { Box, Paper, Typography } from '@mui/material';
 import './DataTable.css';
@@ -20,8 +21,8 @@ interface DataTableProps<T> {
   loading?: boolean;
   pageSize?: number;
   checkboxSelection?: boolean;
-  onSelectionChange?: (selectedIds: string[]) => void;
-  selectionModel?: string[];
+  onSelectionChange?: (selectedIds: GridRowId[]) => void;
+  selectionModel?: GridRowId[];
   editMode?: boolean;
   height?: string | number;
   filterModel?: GridFilterModel;
@@ -57,7 +58,7 @@ const DataTable = <T extends { id: string }>({
 
   const handleSelectionChange = (newSelectionModel: GridRowSelectionModel) => {
     if (onSelectionChange) {
-      onSelectionChange(newSelectionModel as string[]);
+      onSelectionChange(newSelectionModel);
     }
   };
 
@@ -111,7 +112,7 @@ const DataTable = <T extends { id: string }>({
           pageSizeOptions={[5, 10, 20, 50, 100]}
           checkboxSelection={checkboxSelection}
           onRowSelectionModelChange={handleSelectionChange}
-          rowSelectionModel={selectionModel}
+          rowSelectionModel={selectionModel as GridRowSelectionModel}
           filterModel={filterModel}
           onFilterModelChange={onFilterModelChange}
           sortModel={sortModel}
@@ -138,7 +139,6 @@ const DataTable = <T extends { id: string }>({
               paginationModel: { pageSize, page: 0 },
             },
           }}
-          disableColumnReorder={false}
           sx={{
             '& .MuiDataGrid-cell--editing': {
               bgcolor: 'rgb(255,215,115, 0.19)',

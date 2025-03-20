@@ -5,7 +5,7 @@ import { Button, Stack, Box, Dialog, DialogTitle, DialogContent, DialogActions, 
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { GridColDef, GridRenderCellParams, GridValueFormatter } from '@mui/x-data-grid';
+import { GridColDef, GridRenderCellParams, GridValueFormatter, GridRowId } from '@mui/x-data-grid';
 import DataTable from './DataTable';
 import { usePoles } from '../services/PoleService';
 import PoleFilter from './PoleFilter';
@@ -31,7 +31,7 @@ const VehiculesMUI: React.FC = () => {
   const [filteredVehicules, setFilteredVehicules] = useState<Vehicule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedVehicules, setSelectedVehicules] = useState<string[]>([]);
+  const [selectedVehicules, setSelectedVehicules] = useState<GridRowId[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [selectedPole, setSelectedPole] = useState<string>('');
   const [quickSearch, setQuickSearch] = useState<string>('');
@@ -169,179 +169,89 @@ const VehiculesMUI: React.FC = () => {
       fetchVehicules();
       handleCloseModal();
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement:', error);
-      setError('Erreur lors de l\'enregistrement');
-    }
-  };
-
-  const handleAddNew = async () => {
-    try {
-      // Créer un nouveau véhicule avec des valeurs par défaut
-      const newVehicule: Omit<Vehicule, 'id'> = {
-        immatriculation: '',
-        marque: '',
-        modele: '',
-        type: 'Voiture',
-        annee: new Date().getFullYear(),
-        statut: 'actif' as const,
-        coursierAssigne: '',
-        kilometrage: 0,
-        pole: selectedPole || ''
-      };
-
-      // Ajouter le véhicule à Firestore
-      const docRef = await addDoc(collection(db, 'vehicules'), newVehicule);
-      
-      // Ajouter le véhicule à l'état local avec l'ID en haut du tableau
-      const newVehiculeWithId: Vehicule = {
-        ...newVehicule,
-        id: docRef.id
-      };
-      
-      setVehicules([newVehiculeWithId, ...vehicules]); // Ajouter en haut du tableau
-      setNewVehiculeId(docRef.id);
-      setEditMode(true); // Activer le mode édition
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout:', error);
-      setError('Erreur lors de l\'ajout du véhicule');
+      console.error('Erreur lors de la sauvegarde du véhicule:', error);
+      alert('Erreur lors de la sauvegarde du véhicule');
     }
   };
 
   const handleDeleteSelected = async () => {
-    if (selectedVehicules.length === 0) return;
-    
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedVehicules.length} véhicule(s) ?`)) {
-      try {
-        const deletePromises = selectedVehicules.map(id => deleteDoc(doc(db, 'vehicules', id)));
-        await Promise.all(deletePromises);
-        
-        // Rafraîchir les données
-        fetchVehicules();
-        setSelectedVehicules([]);
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        setError('Erreur lors de la suppression');
-      }
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer les véhicules sélectionnés ?')) {
+      return;
+    }
+
+    try {
+      const deletePromises = selectedVehicules.map(id => 
+        deleteDoc(doc(db, 'vehicules', String(id)))
+      );
+      await Promise.all(deletePromises);
+      setSelectedVehicules([]);
+      fetchVehicules();
+    } catch (error) {
+      console.error('Erreur lors de la suppression des véhicules:', error);
+      alert('Erreur lors de la suppression des véhicules');
     }
   };
 
   const handleCellEditCommit = async (params: any) => {
     try {
       const { id, field, value } = params;
-      
-      // Si c'est une nouvelle ligne et que l'immatriculation est vide, ne rien faire
-      if (id === newVehiculeId && field === 'immatriculation' && !value) {
-        return;
-      }
-
-      // Si c'est une nouvelle ligne et que l'immatriculation est remplie, sauvegarder
-      if (id === newVehiculeId && field === 'immatriculation' && value) {
-        const vehicule = vehicules.find(v => v.id === id);
-        if (vehicule) {
-          await updateDoc(doc(db, 'vehicules', id), {
-            ...vehicule,
-            [field]: value
-          });
-          setNewVehiculeId(null); // Réinitialiser l'ID de la nouvelle ligne
-        }
-      } else {
-        // Mise à jour normale
-        await updateDoc(doc(db, 'vehicules', id), {
-          [field]: field === 'annee' || field === 'kilometrage' ? parseInt(value) : value
-        });
-      }
-      
-      // Mettre à jour l'état local
-      setVehicules(vehicules.map(v => 
-        v.id === id ? { ...v, [field]: value } : v
-      ));
+      await updateDoc(doc(db, 'vehicules', String(id)), {
+        [field]: value
+      });
+      fetchVehicules();
     } catch (error) {
-      console.error('Erreur lors de la modification:', error);
-      setError('Erreur lors de la modification');
+      console.error('Erreur lors de la mise à jour de la cellule:', error);
+      alert('Erreur lors de la mise à jour de la cellule');
     }
   };
 
   const toggleEditMode = () => {
     setEditMode(!editMode);
-    if (editMode) {
+    if (!editMode) {
       setSelectedVehicules([]);
-      setNewVehiculeId(null);
     }
   };
 
-  // Définir les colonnes
+  const handleAddNew = () => {
+    handleOpenModal();
+  };
+
   const columns: GridColDef[] = [
-    { 
-      field: 'pole', 
-      headerName: 'PÔLE', 
-      width: 150,
-      valueGetter: (params: any) => getPoleNameById(params.row?.pole),
-      renderCell: (params: GridRenderCellParams) => (
-        editMode ? (
-          <PoleSelector
-            value={params.row.pole || ''}
-            onChange={(value) => handleCellEditCommit({ id: params.row.id, field: 'pole', value })}
-            placeholder="Sélectionner un pôle"
-            style={{ width: '100%' }}
-            showSearch
-            allowClear
-          />
-        ) : (
-          getPoleNameById(params.row.pole)
-        )
-      ),
-      editable: false,
-      headerAlign: 'left',
-    },
     { 
       field: 'immatriculation', 
       headerName: 'Immatriculation', 
       width: 150,
-      headerAlign: 'left',
+      editable: true,
+      headerAlign: 'center',
     },
     { 
       field: 'marque', 
       headerName: 'Marque', 
-      width: 120,
-      headerAlign: 'left',
+      width: 150,
+      editable: true,
+      headerAlign: 'center',
     },
     { 
       field: 'modele', 
       headerName: 'Modèle', 
-      width: 120,
-      headerAlign: 'left',
+      width: 150,
+      editable: true,
+      headerAlign: 'center',
     },
     { 
       field: 'type', 
       headerName: 'Type', 
       width: 120,
-      renderCell: (params: GridRenderCellParams) => (
-        editMode ? (
-          <TextField
-            select
-            value={params.value}
-            onChange={(e) => handleCellEditCommit({ id: params.row.id, field: 'type', value: e.target.value })}
-            fullWidth
-            variant="standard"
-          >
-            <MenuItem value="Voiture">Voiture</MenuItem>
-            <MenuItem value="Utilitaire">Utilitaire</MenuItem>
-            <MenuItem value="Camion">Camion</MenuItem>
-            <MenuItem value="Autre">Autre</MenuItem>
-          </TextField>
-        ) : (
-          params.value
-        )
-      ),
-      editable: false,
-      headerAlign: 'left',
+      editable: true,
+      headerAlign: 'center',
     },
     { 
       field: 'annee', 
       headerName: 'Année', 
       width: 100,
       type: 'number',
-      headerAlign: 'right',
+      editable: true,
+      headerAlign: 'center',
     },
     { 
       field: 'statut', 
@@ -367,7 +277,6 @@ const VehiculesMUI: React.FC = () => {
           </span>
         )
       ),
-      editable: false,
       cellClassName: (params) => `status-${params.value}`,
       headerAlign: 'center',
     },
@@ -414,7 +323,7 @@ const VehiculesMUI: React.FC = () => {
               size="small"
               onClick={() => {
                 if (window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-                  deleteDoc(doc(db, 'vehicules', params.row.id));
+                  deleteDoc(doc(db, 'vehicules', params.row.id.toString()));
                   fetchVehicules();
                 }
               }}
@@ -610,4 +519,4 @@ const VehiculesMUI: React.FC = () => {
   );
 };
 
-export default VehiculesMUI; 
+export default VehiculesMUI;

@@ -29,6 +29,8 @@
     "@mui/x-data-grid": "^7.28.0",
     "@react-google-maps/api": "^2.20.6",
     "@supabase/supabase-js": "^2.49.1",
+    "@tanstack/react-table": "^8.21.2",
+    "@tanstack/react-virtual": "^3.13.4",
     "@types/leaflet.markercluster": "^1.5.5",
     "@types/react-datepicker": "^6.2.0",
     "@vitest/browser": "^0.34.6",
