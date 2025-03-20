@@ -3,9 +3,12 @@ import { Role, User } from '../types/roles';
 export const PAGES = {
   DASHBOARD: 'dashboard',
   PASSAGES: 'passages',
+  PASSAGE_DETAILS: 'passageDetails',
   SITES: 'sites',
   TOURNEES: 'tournees',
+  TOURNEE_DETAILS: 'tourneeDetails',
   VEHICULES: 'vehicules',
+  VEHICULES_ADVANCED: 'vehiculesAdvanced',
   CARTE: 'carte',
   USER_MANAGEMENT: 'userManagement',
   ADMINISTRATION: 'administration'

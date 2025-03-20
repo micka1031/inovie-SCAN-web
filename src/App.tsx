@@ -25,11 +25,7 @@ import { RoleService, canAccessPage } from './services/RoleService';
 import { PAGES } from './utils/pageAccessUtils';
 import { Role } from './types/roles';
 import { ListAlt, LocalShipping, DirectionsCar, LocationOn, People } from '@mui/icons-material';
-import DashboardIcon from './components/DashboardIcon';
-import PassageDetails from './components/PassageDetails';
 import TourneeDetails from './components/TourneeDetails';
-import Login from './components/Login';
-import ResetPassword from './components/ResetPassword';
 
 // Composant principal de l'application
 const App: React.FC = () => {
@@ -219,7 +215,7 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               pageName={PAGES.PASSAGE_DETAILS}
               roles={roles}
             >
-              <PassageDetails />
+              <Passages />
             </ProtectedRoute>
           )
         },
@@ -286,7 +282,7 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               userRole={userRole} 
               allowedRoles={['Administrateur', 'Utilisateur', 'default']}
               requiredPermissions={['vehicules.view']}
-              pageName={PAGES.VEHICULES}
+              pageName={PAGES.VEHICULES_ADVANCED}
               roles={roles}
             >
               <VehiculesMUI />
@@ -395,11 +391,11 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
     },
     {
       path: '/login',
-      element: <Login />
+      element: <LoginScreen />
     },
     {
       path: '/reset-password',
-      element: <ResetPassword />
+      element: <LoginScreen />
     },
     {
       path: '*',
