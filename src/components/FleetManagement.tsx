@@ -425,7 +425,6 @@ const FleetManagement: React.FC = () => {
               style={{ width: '100%' }}
               showSearch
               allowClear
-              title="Pôle du véhicule"
             />
           </FormControl>
           <FormControl fullWidth margin="dense">
@@ -535,7 +534,6 @@ const FleetManagement: React.FC = () => {
                   style={{ width: '100%' }}
                   showSearch
                   allowClear
-                  title="Pôle du véhicule"
                 />
               </FormControl>
               <FormControl fullWidth margin="dense">

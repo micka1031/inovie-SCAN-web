@@ -16,6 +16,7 @@ import { RolePermissions } from '../utils/permissions';
 import { UserRole } from '../types/roles';
 import PoleSelector from './PoleSelector';
 import { usePoles } from '../services/PoleService';
+import PoleFilter from './PoleFilter';
 
 // Étendre l'interface User importée
 type User = ImportedUser & {
@@ -38,6 +39,9 @@ const UserManagement: React.FC = () => {
   // État pour la recherche rapide
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+
+  // Ajouter un état pour le filtre par pôle
+  const [selectedPole, setSelectedPole] = useState<string>('');
 
   const roleService = RoleService.getInstance();
   const { currentUser, hasPermission } = useAuth();
@@ -65,29 +69,31 @@ const UserManagement: React.FC = () => {
     setFilteredUsers(users);
   }, [users]);
 
-  // Effet pour filtrer les utilisateurs en fonction de la recherche rapide
+  // Effet pour filtrer les utilisateurs en fonction de la recherche rapide et du pôle sélectionné
   useEffect(() => {
-    if (!quickSearch.trim()) {
-      // Si la recherche est vide, afficher tous les utilisateurs
-      setFilteredUsers(users);
-      return;
+    let results = users;
+
+    // Filtrer par pôle si un pôle est sélectionné
+    if (selectedPole) {
+      results = results.filter(user => user.pole === selectedPole);
     }
 
-    const searchTerm = quickSearch.toLowerCase().trim();
-    const results = users.filter(user => {
-      // Rechercher dans tous les champs textuels de l'utilisateur
-      return (
-        (user.nom || '').toLowerCase().includes(searchTerm) ||
-        (user.email || '').toLowerCase().includes(searchTerm) ||
-        (user.identifiant || '').toLowerCase().includes(searchTerm) ||
-        (user.role || '').toLowerCase().includes(searchTerm) ||
-        (user.pole || '').toLowerCase().includes(searchTerm) ||
-        (user.statut || '').toLowerCase().includes(searchTerm)
-      );
-    });
+    // Ensuite, filtrer par recherche rapide
+    if (quickSearch.trim()) {
+      const searchTerm = quickSearch.toLowerCase().trim();
+      results = results.filter(user => {
+        return (
+          (user.nom || '').toLowerCase().includes(searchTerm) ||
+          (user.email || '').toLowerCase().includes(searchTerm) ||
+          (user.identifiant || '').toLowerCase().includes(searchTerm) ||
+          (user.role || '').toLowerCase().includes(searchTerm) ||
+          (user.pole || '').toLowerCase().includes(searchTerm)
+        );
+      });
+    }
 
     setFilteredUsers(results);
-  }, [quickSearch, users]);
+  }, [quickSearch, users, selectedPole]);
 
   useEffect(() => {
     console.log('🔐 Permissions de l\'utilisateur courant:', {
@@ -638,6 +644,11 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
     return pole ? pole.nom : poleId;
   };
 
+  // Fonction pour gérer le changement de pôle
+  const handlePoleChange = (pole: string) => {
+    setSelectedPole(pole);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -736,6 +747,14 @@ Pour une suppression complète, contactez l'administrateur système.`)) {
               onChange={(e) => setQuickSearch(e.target.value)}
               disabled={loading}
             />
+            <div className="pole-filter">
+              <PoleFilter
+                onPoleChange={handlePoleChange}
+                selectedPole={selectedPole}
+                label="Filtrer par pôle"
+                className="pole-filter-component"
+              />
+            </div>
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getAuth } from 'firebase/auth';
 import { SELAS, SELASCreation, SELASStats } from '../types/SELAS';
 
 /**
@@ -25,6 +26,16 @@ export class SELASService {
    */
   public async getSELAS(): Promise<SELAS[]> {
     try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        console.error('Erreur lors de la récupération des SELAS: Utilisateur non authentifié');
+        throw new Error('Utilisateur non authentifié. Veuillez vous connecter pour accéder aux SELAS.');
+      }
+      
+      console.log(`Tentative d'accès à la collection SELAS avec l'utilisateur: ${currentUser.email}`);
+      
       const selasRef = collection(db, this.collectionName);
       const snapshot = await getDocs(selasRef);
       
@@ -43,6 +54,14 @@ export class SELASService {
    */
   public async getSELASById(id: string): Promise<SELAS | null> {
     try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        console.error(`Erreur lors de la récupération de la SELAS ${id}: Utilisateur non authentifié`);
+        throw new Error('Utilisateur non authentifié. Veuillez vous connecter pour accéder aux SELAS.');
+      }
+      
       const selasRef = doc(db, this.collectionName, id);
       const snapshot = await getDoc(selasRef);
       

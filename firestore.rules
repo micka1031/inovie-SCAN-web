@@ -49,6 +49,18 @@ service cloud.firestore {
       allow update, delete: if hasRole('Administrateur');
     }
 
+    // Règles pour la collection 'selas'
+    match /selas/{selasId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if hasRole('Administrateur');
+    }
+
+    // Règles pour la collection 'poles'
+    match /poles/{poleId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if hasRole('Administrateur');
+    }
+
     // Règle par défaut : refuser l'accès
     match /{document=**} {
       allow read, write: if false;

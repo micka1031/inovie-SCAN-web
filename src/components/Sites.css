@@ -278,9 +278,9 @@
 /* Styles pour les en-têtes et actions fixes lors du défilement */
 .sticky-header-container {
   position: fixed;
-  top: 150px; /* Descendre encore plus */
+  top: 80px;
   right: 20px;
-  z-index: 100; /* Valeur inférieure à celle du dashboard pour rester en dessous */
+  z-index: 100;
   background-color: white;
   padding: 15px;
   border-radius: 8px;
@@ -289,20 +289,20 @@
   flex-direction: column;
   gap: 10px;
   width: auto;
-  max-width: 600px; /* Élargi pour accommoder les boutons horizontaux */
+  max-width: 600px;
 }
 
 .header-actions {
   display: flex;
-  flex-direction: row; /* Force l'affichage horizontal */
-  flex-wrap: nowrap; /* Évite le retour à la ligne */
+  flex-direction: row;
+  flex-wrap: nowrap;
   gap: 10px;
-  justify-content: flex-end; /* Aligne les boutons à droite */
+  justify-content: flex-end;
 }
 
 .edit-actions {
   display: flex;
-  flex-direction: row; /* Force l'affichage horizontal */
+  flex-direction: row;
   flex-wrap: nowrap;
   gap: 10px;
   justify-content: flex-end;
@@ -392,17 +392,21 @@
 }
 
 .quick-search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
   width: 100%;
+  margin-bottom: 10px;
+  max-width: 800px;
 }
 
 .quick-search-input {
-  width: 100%;
-  padding: 6px 10px;
+  flex: 1;
+  padding: 4px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 13px;
-  background-color: #f9f9f9;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  height: 30px;
 }
 
 .quick-search-input:focus {
@@ -674,4 +678,43 @@
 
 .remove-button:hover {
   background-color: #ff1744;
+}
+
+.search-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.search-bar {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pole-filter {
+  width: 180px;
+  min-width: 180px;
+}
+
+.pole-filter .MuiInputBase-root {
+  height: 30px;
+}
+
+.pole-filter .MuiSelect-select {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.pole-filter-component {
+  width: 100%;
 } 

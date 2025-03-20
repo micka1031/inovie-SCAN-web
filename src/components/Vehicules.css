@@ -305,15 +305,37 @@
 }
 
 .quick-search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
   width: 100%;
+  margin-bottom: 10px;
+  max-width: 800px;
 }
 
 .quick-search-input {
-  width: 100%;
-  padding: 6px 10px;
+  flex: 1;
+  padding: 4px 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 13px;
-  background-color: #f9f9f9;
-  transition: all 0.2s ease;
+  font-size: 14px;
+  height: 30px;
+}
+
+.pole-filter {
+  width: 180px;
+  min-width: 180px;
+}
+
+.pole-filter .MuiInputBase-root {
+  height: 30px;
+}
+
+.pole-filter .MuiSelect-select {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.pole-filter-component {
+  width: 100%;
 } 

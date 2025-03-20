@@ -1,13 +1,13 @@
 .pole-filter-container {
-  margin: 10px 0;
-  min-width: 200px;
-  max-width: 300px;
+  margin: 0;
+  width: 100%;
 }
 
 .pole-filter-select {
   background-color: white;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+  min-height: 30px;
 }
 
 /* Style spécifique pour le menu déroulant */
@@ -59,4 +59,24 @@
   .pole-filter-container {
     min-width: 150px;
   }
+}
+
+/* Ajustement pour le Material-UI Select */
+.MuiOutlinedInput-root {
+  height: 30px;
+}
+
+.MuiInputLabel-outlined {
+  transform: translate(14px, 10px) scale(1);
+}
+
+.MuiInputLabel-outlined.MuiInputLabel-shrink {
+  transform: translate(14px, -6px) scale(0.75);
+}
+
+.MuiOutlinedInput-input {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
 } 
