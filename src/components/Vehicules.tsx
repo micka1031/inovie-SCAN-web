@@ -9,6 +9,7 @@ import './EditMode.css';
 import './Vehicules.css';
 import { usePoles } from '../services/PoleService';
 import PoleSelector from './PoleSelector';
+import PoleFilter from './PoleFilter';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -59,6 +60,9 @@ const Vehicules: React.FC = () => {
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredVehicules, setFilteredVehicules] = useState<Vehicule[]>([]);
 
+  // Ajout du filtre par pôle
+  const [selectedPole, setSelectedPole] = useState<string>('');
+
   // Utilisation du hook usePoles
   const { poles } = usePoles();
   
@@ -88,31 +92,35 @@ const Vehicules: React.FC = () => {
     setFilteredVehicules(vehicules);
   }, [vehicules]);
 
-  // Effet pour filtrer les véhicules en fonction de la recherche rapide
+  // Effet pour filtrer les véhicules en fonction de la recherche rapide et du pôle sélectionné
   useEffect(() => {
-    if (!quickSearch.trim()) {
-      // Si la recherche est vide, afficher tous les véhicules
-      setFilteredVehicules(vehicules);
-      return;
+    let results = vehicules;
+
+    // Filtrer par pôle si un pôle est sélectionné
+    if (selectedPole) {
+      results = results.filter(vehicule => vehicule.pole === selectedPole);
     }
 
-    const searchTerm = quickSearch.toLowerCase().trim();
-    const results = vehicules.filter(vehicule => {
-      // Rechercher dans tous les champs textuels du véhicule
-      return (
-        vehicule.immatriculation.toLowerCase().includes(searchTerm) ||
-        vehicule.marque.toLowerCase().includes(searchTerm) ||
-        vehicule.modele.toLowerCase().includes(searchTerm) ||
-        vehicule.type.toLowerCase().includes(searchTerm) ||
-        vehicule.statut.toLowerCase().includes(searchTerm) ||
-        (vehicule.coursierAssigne || '').toLowerCase().includes(searchTerm) ||
-        vehicule.annee.toString().includes(searchTerm) ||
-        vehicule.kilometrage.toString().includes(searchTerm)
-      );
-    });
+    // Ensuite filtrer par recherche rapide
+    if (quickSearch.trim()) {
+      const searchTerm = quickSearch.toLowerCase().trim();
+      results = results.filter(vehicule => {
+        // Rechercher dans tous les champs textuels du véhicule
+        return (
+          vehicule.immatriculation.toLowerCase().includes(searchTerm) ||
+          vehicule.marque.toLowerCase().includes(searchTerm) ||
+          vehicule.modele.toLowerCase().includes(searchTerm) ||
+          vehicule.type.toLowerCase().includes(searchTerm) ||
+          vehicule.statut.toLowerCase().includes(searchTerm) ||
+          (vehicule.coursierAssigne || '').toLowerCase().includes(searchTerm) ||
+          vehicule.annee.toString().includes(searchTerm) ||
+          vehicule.kilometrage.toString().includes(searchTerm)
+        );
+      });
+    }
 
     setFilteredVehicules(results);
-  }, [quickSearch, vehicules]);
+  }, [quickSearch, vehicules, selectedPole]);
 
   const fetchVehicules = async () => {
     try {
@@ -302,43 +310,30 @@ const Vehicules: React.FC = () => {
   };
 
   const toggleEditMode = () => {
-    if (!editMode) {
-      // Si on entre en mode édition, initialiser l'état d'édition avec les véhicules actuels
-      const initialEditState: {[key: string]: Vehicule} = {};
-      vehicules.forEach(vehicule => {
-        initialEditState[vehicule.id] = {...vehicule};
-      });
-      console.log("État d'édition initial des véhicules:", initialEditState);
-      setEditingVehicules(initialEditState);
-      // Activer le mode édition
-      setEditMode(true);
+    if (editMode) {
+      // Si on quitte le mode édition, réinitialiser les sélections et les modifications
+      setSelectedVehicules([]);
+      setEditingVehicules({});
+      setSelectAll(false);
       setNewVehicules([]);
+      
+      // Rafraîchir les données depuis Firebase
+      fetchVehicules();
     } else {
-      // Si on quitte le mode édition, demander confirmation
-      if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
-        // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        console.log("État d'édition final des véhicules:", editingVehicules);
-        saveAllChanges()
-          .then(() => {
-            // Désélectionner tout et quitter le mode édition
-            setSelectedVehicules([]);
-            setSelectAll(false);
-            setEditMode(false);
-          })
-          .catch(error => {
-            console.error("Erreur lors de la sauvegarde:", error);
-            // Laisser l'utilisateur en mode édition en cas d'erreur
-            alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-          });
-      } else {
-        // Annuler les modifications et quitter le mode édition
-        setEditingVehicules({});
-        setNewVehicules([]);
-        setSelectedVehicules([]);
-        setSelectAll(false);
-        setEditMode(false);
-      }
+      // Si on entre en mode édition, initialiser les sites en édition
+      const editingVehiculesObj: {[key: string]: Vehicule} = {};
+      filteredVehicules.forEach(vehicule => {
+        editingVehiculesObj[vehicule.id] = { ...vehicule };
+      });
+      setEditingVehicules(editingVehiculesObj);
     }
+    
+    // Inverser le mode édition
+    setEditMode(!editMode);
+    
+    // Réinitialiser la recherche rapide et les filtres
+    setQuickSearch('');
+    setSelectedPole('');
   };
 
   const saveAllChanges = async () => {
@@ -634,6 +629,11 @@ const Vehicules: React.FC = () => {
     }
   };
 
+  // Fonction pour gérer le changement de pôle
+  const handlePoleChange = (pole: string) => {
+    setSelectedPole(pole);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -737,6 +737,14 @@ const Vehicules: React.FC = () => {
             onChange={(e) => setQuickSearch(e.target.value)}
             disabled={loading}
           />
+          <div className="pole-filter">
+            <PoleFilter
+              onPoleChange={handlePoleChange}
+              selectedPole={selectedPole}
+              label="Filtrer par pôle"
+              className="pole-filter-component"
+            />
+          </div>
         </div>
       </div>
       

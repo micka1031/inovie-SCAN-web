@@ -30,6 +30,7 @@ import { Site } from '../types/index';
 import './EditMode.css';
 import './Sites.css';
 import PoleSelector from './PoleSelector';
+import PoleFilter from './PoleFilter';
 import { usePoles } from '../services/PoleService';
 
 // Désactiver le suivi de structure et de chronologie pour améliorer les performances
@@ -80,6 +81,9 @@ const Sites: React.FC = () => {
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredSites, setFilteredSites] = useState<Site[]>([]);
 
+  // Ajout du filtre par pôle
+  const [selectedPole, setSelectedPole] = useState<string>('');
+
   // Nouveaux états pour la pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20); // Par défaut 20 éléments
@@ -118,30 +122,40 @@ const Sites: React.FC = () => {
 
   // Effet pour filtrer les sites en fonction de la recherche rapide
   useEffect(() => {
-    if (!quickSearch.trim()) {
-      // Si la recherche est vide, afficher tous les sites
+    if (!quickSearch.trim() && !selectedPole) {
+      // Si la recherche est vide et aucun pôle sélectionné, afficher tous les sites
       setFilteredSites(sites);
       return;
     }
 
-    const searchTerm = quickSearch.toLowerCase().trim();
-    const results = sites.filter(site => {
-      // Rechercher dans tous les champs textuels du site
-      return (
-        (site.nom || '').toLowerCase().includes(searchTerm) ||
-        (site.adresse || '').toLowerCase().includes(searchTerm) ||
-        (site.ville || '').toLowerCase().includes(searchTerm) ||
-        (site.codePostal || '').toLowerCase().includes(searchTerm) ||
-        (site.telephone || '').toLowerCase().includes(searchTerm) ||
-        (site.email || '').toLowerCase().includes(searchTerm) ||
-        (site.type || '').toLowerCase().includes(searchTerm) ||
-        (site.statut || '').toLowerCase().includes(searchTerm) ||
-        (site.codeBarres || '').toLowerCase().includes(searchTerm)
-      );
-    });
+    let results = sites;
+
+    // Filtrer par pôle si un pôle est sélectionné
+    if (selectedPole) {
+      results = results.filter(site => site.pole === selectedPole);
+    }
+
+    // Ensuite filtrer par recherche rapide
+    if (quickSearch.trim()) {
+      const searchTerm = quickSearch.toLowerCase().trim();
+      results = results.filter(site => {
+        // Rechercher dans tous les champs textuels du site
+        return (
+          (site.nom || '').toLowerCase().includes(searchTerm) ||
+          (site.adresse || '').toLowerCase().includes(searchTerm) ||
+          (site.ville || '').toLowerCase().includes(searchTerm) ||
+          (site.codePostal || '').toLowerCase().includes(searchTerm) ||
+          (site.telephone || '').toLowerCase().includes(searchTerm) ||
+          (site.email || '').toLowerCase().includes(searchTerm) ||
+          (site.type || '').toLowerCase().includes(searchTerm) ||
+          (site.statut || '').toLowerCase().includes(searchTerm) ||
+          (site.codeBarres || '').toLowerCase().includes(searchTerm)
+        );
+      });
+    }
 
     setFilteredSites(results);
-  }, [quickSearch, sites]);
+  }, [quickSearch, sites, selectedPole]);
 
   // Pagination et filtrage des sites
   const paginatedAndFilteredSites = useMemo(() => {
@@ -503,43 +517,30 @@ const Sites: React.FC = () => {
   };
 
   const toggleEditMode = () => {
-    if (!editMode) {
-      // Si on entre en mode édition, initialiser l'état d'édition avec les sites actuels
-      console.log("Entrée en mode édition");
-      const initialEditState: {[key: string]: Site} = {};
-      sites.forEach(site => {
-        initialEditState[site.id] = {...site};
-      });
-      setEditingSites(initialEditState);
-      // Réinitialiser les nouveaux sites
+    if (editMode) {
+      // Si on quitte le mode édition, réinitialiser les sélections et les modifications
+      setSelectedSites([]);
+      setEditingSites({});
+      setSelectAll(false);
       setNewSites([]);
-      // Activer le mode édition
-      setEditMode(true);
+      
+      // Rafraîchir les données depuis Firebase
+      fetchSites();
     } else {
-      // Si on quitte le mode édition, demander confirmation
-      if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
-        console.log("Sauvegarde des modifications avant de quitter le mode édition");
-        // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        handleSave().then(() => {
-          // Désélectionner tout et quitter le mode édition
-          setSelectedSites([]);
-          setSelectAll(false);
-          setEditMode(false);
-        }).catch(error => {
-          console.error("Erreur lors de la sauvegarde:", error);
-          // Laisser l'utilisateur en mode édition en cas d'erreur
-          alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-        });
-      } else {
-        console.log("Annulation des modifications et sortie du mode édition");
-        // Annuler les modifications et quitter le mode édition
-        setEditingSites({});
-        setNewSites([]);
-        setSelectedSites([]);
-        setSelectAll(false);
-        setEditMode(false);
-      }
+      // Si on entre en mode édition, initialiser les sites en édition
+      const editingSitesObj: {[key: string]: Site} = {};
+      filteredSites.forEach(site => {
+        editingSitesObj[site.id] = { ...site };
+      });
+      setEditingSites(editingSitesObj);
     }
+    
+    // Inverser le mode édition
+    setEditMode(!editMode);
+    
+    // Réinitialiser la recherche rapide et les filtres
+    setQuickSearch('');
+    setSelectedPole('');
   };
 
   const handleSave = async () => {
@@ -1147,6 +1148,11 @@ const Sites: React.FC = () => {
     setNewSites(updatedNewSites);
   };
 
+  // Fonction pour gérer le changement de pôle
+  const handlePoleChange = (pole: string) => {
+    setSelectedPole(pole);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -1255,6 +1261,14 @@ const Sites: React.FC = () => {
             onChange={(e) => setQuickSearch(e.target.value)}
             disabled={loading}
           />
+          <div className="pole-filter">
+            <PoleFilter
+              onPoleChange={handlePoleChange}
+              selectedPole={selectedPole}
+              label="Filtrer par pôle"
+              className="pole-filter-component"
+            />
+          </div>
         </div>
       </div>
       

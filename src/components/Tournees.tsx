@@ -27,6 +27,7 @@ import './Tournees.css';
 import ReactDOM from 'react-dom';
 import { usePoles } from '../services/PoleService';
 import PoleSelector from './PoleSelector';
+import PoleFilter from './PoleFilter';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -90,6 +91,9 @@ const Tournees: React.FC = () => {
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredTournees, setFilteredTournees] = useState<Tournee[]>([]);
 
+  // Ajout du filtre par pôle
+  const [selectedPole, setSelectedPole] = useState<string>('');
+
   // Utilisation du hook usePoles
   const { poles } = usePoles();
   
@@ -111,31 +115,35 @@ const Tournees: React.FC = () => {
     setFilteredTournees(tournees);
   }, [tournees]);
 
-  // Effet pour filtrer les tournées en fonction de la recherche rapide
+  // Effet pour filtrer les tournées en fonction de la recherche rapide et du pôle sélectionné
   useEffect(() => {
-    if (!quickSearch.trim()) {
-      // Si la recherche est vide, afficher toutes les tournées
-      setFilteredTournees(tournees);
-      return;
+    let results = tournees;
+
+    // Filtrer par pôle si un pôle est sélectionné
+    if (selectedPole) {
+      results = results.filter(tournee => tournee.pole === selectedPole);
     }
 
-    const searchTerm = quickSearch.toLowerCase().trim();
-    const results = tournees.filter(tournee => {
-      // Rechercher dans tous les champs textuels de la tournée
-      return (
-        tournee.nom.toLowerCase().includes(searchTerm) ||
-        tournee.heureDepart.toLowerCase().includes(searchTerm) ||
-        (tournee.heureFinReelle || '').toLowerCase().includes(searchTerm) ||
-        tournee.statut.toLowerCase().includes(searchTerm) ||
-        tournee.vehicules.some(vehiculeId => {
-          const vehicule = vehicules.find(v => v.id === vehiculeId);
-          return vehicule && vehicule.immatriculation.toLowerCase().includes(searchTerm);
-        })
-      );
-    });
+    // Ensuite filtrer par recherche rapide
+    if (quickSearch.trim()) {
+      const searchTerm = quickSearch.toLowerCase().trim();
+      results = results.filter(tournee => {
+        // Rechercher dans tous les champs textuels de la tournée
+        return (
+          tournee.nom.toLowerCase().includes(searchTerm) ||
+          tournee.heureDepart.toLowerCase().includes(searchTerm) ||
+          (tournee.heureFinReelle || '').toLowerCase().includes(searchTerm) ||
+          tournee.statut.toLowerCase().includes(searchTerm) ||
+          tournee.vehicules.some(vehiculeId => {
+            const vehicule = vehicules.find(v => v.id === vehiculeId);
+            return vehicule && vehicule.immatriculation.toLowerCase().includes(searchTerm);
+          })
+        );
+      });
+    }
 
     setFilteredTournees(results);
-  }, [quickSearch, tournees, vehicules]);
+  }, [quickSearch, tournees, vehicules, selectedPole]);
 
   // Effet pour gérer la sélection/désélection de toutes les tournées
   useEffect(() => {
@@ -316,47 +324,30 @@ const Tournees: React.FC = () => {
   };
 
   const toggleEditMode = () => {
-    if (!editMode) {
-      // Si on entre en mode édition, initialiser l'état d'édition avec les tournées actuelles
-      console.log("Entrée en mode édition");
-      const initialEditState: {[key: string]: Tournee} = {};
-      tournees.forEach(tournee => {
-        initialEditState[tournee.id] = {...tournee};
-      });
-      console.log("État d'édition initial des tournées:", initialEditState);
-      setEditingTournees(initialEditState);
-      // Réinitialiser les nouvelles tournées
+    if (editMode) {
+      // Si on quitte le mode édition, réinitialiser les sélections et les modifications
+      setSelectedTournees([]);
+      setEditingTournees({});
+      setSelectAll(false);
       setNewTournees([]);
-      // Activer le mode édition
-      setEditMode(true);
+      
+      // Rafraîchir les données depuis Firebase
+      fetchTournees();
     } else {
-      // Si on quitte le mode édition, demander confirmation
-      if (window.confirm("Voulez-vous enregistrer les modifications ?")) {
-        console.log("Sauvegarde des modifications avant de quitter le mode édition");
-        console.log("État d'édition final des tournées:", editingTournees);
-        // Sauvegarder les modifications et quitter le mode édition après la sauvegarde
-        saveAllChanges()
-          .then(() => {
-            // Désélectionner tout et quitter le mode édition
-            setSelectedTournees([]);
-            setSelectAll(false);
-            setEditMode(false);
-          })
-          .catch(error => {
-            console.error("Erreur lors de la sauvegarde:", error);
-            // Laisser l'utilisateur en mode édition en cas d'erreur
-            alert("Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.");
-          });
-      } else {
-        console.log("Annulation des modifications et sortie du mode édition");
-        // Annuler les modifications et quitter le mode édition
-        setEditingTournees({});
-        setNewTournees([]);
-        setSelectedTournees([]);
-        setSelectAll(false);
-        setEditMode(false);
-      }
+      // Si on entre en mode édition, initialiser les sites en édition
+      const editingTourneesObj: {[key: string]: Tournee} = {};
+      filteredTournees.forEach(tournee => {
+        editingTourneesObj[tournee.id] = { ...tournee };
+      });
+      setEditingTournees(editingTourneesObj);
     }
+    
+    // Inverser le mode édition
+    setEditMode(!editMode);
+    
+    // Réinitialiser la recherche rapide et les filtres
+    setQuickSearch('');
+    setSelectedPole('');
   };
 
   const toggleTourneeSelection = (id: string) => {
@@ -614,6 +605,11 @@ const Tournees: React.FC = () => {
     });
   };
 
+  // Fonction pour gérer le changement de pôle
+  const handlePoleChange = (pole: string) => {
+    setSelectedPole(pole);
+  };
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -713,6 +709,14 @@ const Tournees: React.FC = () => {
             onChange={(e) => setQuickSearch(e.target.value)}
             disabled={loading}
           />
+          <div className="pole-filter">
+            <PoleFilter
+              onPoleChange={handlePoleChange}
+              selectedPole={selectedPole}
+              label="Filtrer par pôle"
+              className="pole-filter-component"
+            />
+          </div>
         </div>
       </div>
       

@@ -9,6 +9,7 @@ import './Passages.css';
 import './EditMode.css';
 import { usePoles } from '../services/PoleService';
 import PoleSelector from './PoleSelector';
+import PoleFilter from './PoleFilter';
 
 // Enregistrer la locale française
 registerLocale('fr', fr);
@@ -190,6 +191,9 @@ const Passages: React.FC = () => {
   const [quickSearch, setQuickSearch] = useState<string>('');
   const [filteredPassages, setFilteredPassages] = useState<Passage[]>([]);
 
+  // Ajout du filtre par pôle
+  const [selectedPole, setSelectedPole] = useState<string>('');
+
   // Ajout des états pour le mode édition et la sélection multiple
   const [editMode, setEditMode] = useState(false);
   const [selectedPassages, setSelectedPassages] = useState<string[]>([]);
@@ -224,32 +228,36 @@ const Passages: React.FC = () => {
     setFilteredPassages(passages);
   }, [passages]);
 
-  // Effet pour filtrer les passages en fonction de la recherche rapide
+  // Effet pour filtrer les passages en fonction de la recherche rapide et du pôle sélectionné
   useEffect(() => {
-    if (!quickSearch.trim()) {
-      // Si la recherche est vide, afficher tous les passages filtrés par les autres critères
-      setFilteredPassages(passages);
-      return;
+    let results = passages;
+
+    // Filtrer par pôle si un pôle est sélectionné
+    if (selectedPole) {
+      results = results.filter(passage => passage.pole === selectedPole);
     }
 
-    const searchTerm = quickSearch.toLowerCase().trim();
-    const results = passages.filter(passage => {
-      // Rechercher dans tous les champs textuels du passage
-      return (
-        getSiteName(passage.siteDepart).toLowerCase().includes(searchTerm) ||
-        getSiteName(passage.siteFin || '').toLowerCase().includes(searchTerm) ||
-        passage.idColis.toLowerCase().includes(searchTerm) ||
-        passage.statut.toLowerCase().includes(searchTerm) ||
-        (passage.coursierChargement || '').toLowerCase().includes(searchTerm) ||
-        (passage.coursierLivraison || '').toLowerCase().includes(searchTerm) ||
-        getTourneeName(passage.tourneeId).toLowerCase().includes(searchTerm) ||
-        getVehiculeImmatriculation(passage.vehiculeId).toLowerCase().includes(searchTerm) ||
-        formatDateFr(convertTimestampToDate(passage.dateHeureDepart)).includes(searchTerm)
-      );
-    });
+    // Ensuite filtrer par recherche rapide
+    if (quickSearch.trim()) {
+      const searchTerm = quickSearch.toLowerCase().trim();
+      results = results.filter(passage => {
+        // Rechercher dans tous les champs textuels du passage
+        return (
+          getSiteName(passage.siteDepart).toLowerCase().includes(searchTerm) ||
+          getSiteName(passage.siteFin || '').toLowerCase().includes(searchTerm) ||
+          passage.idColis.toLowerCase().includes(searchTerm) ||
+          passage.statut.toLowerCase().includes(searchTerm) ||
+          (passage.coursierChargement || '').toLowerCase().includes(searchTerm) ||
+          (passage.coursierLivraison || '').toLowerCase().includes(searchTerm) ||
+          getTourneeName(passage.tourneeId).toLowerCase().includes(searchTerm) ||
+          getVehiculeImmatriculation(passage.vehiculeId).toLowerCase().includes(searchTerm) ||
+          formatDateFr(convertTimestampToDate(passage.dateHeureDepart)).includes(searchTerm)
+        );
+      });
+    }
 
     setFilteredPassages(results);
-  }, [quickSearch, passages]);
+  }, [quickSearch, passages, selectedPole]);
 
   // Fonction pour convertir un Timestamp Firebase en Date JavaScript
   const convertTimestampToDate = (timestamp: any): Date | null => {
@@ -606,6 +614,11 @@ const Passages: React.FC = () => {
     return pole ? pole.nom : poleId;
   };
 
+  // Fonction pour gérer le changement de pôle
+  const handlePoleChange = (pole: string) => {
+    setSelectedPole(pole);
+  };
+
   const handleSearch = () => {
     console.log('Recherche démarrée avec les critères suivants:');
     console.log('Date début:', dateDebut);
@@ -675,7 +688,6 @@ const Passages: React.FC = () => {
   };
 
   const resetFilters = () => {
-    // Réinitialiser tous les filtres
     setDateDebut(null);
     setDateFin(null);
     setTournee('');
@@ -683,9 +695,9 @@ const Passages: React.FC = () => {
     setSite('');
     setVehicule('');
     setIdColis('');
-    
-    // Réinitialiser les passages à toutes les données
-    setPassages(allPassages);
+    setQuickSearch('');
+    setSelectedPole('');
+    setFilteredPassages(passages);
   };
 
   // Ajout de la fonction pour supprimer les passages sélectionnés
@@ -945,6 +957,14 @@ const Passages: React.FC = () => {
             onChange={(e) => setQuickSearch(e.target.value)}
             title="Rechercher dans le tableau"
           />
+          <div className="pole-filter">
+            <PoleFilter
+              onPoleChange={handlePoleChange}
+              selectedPole={selectedPole}
+              label="Filtrer par pôle"
+              className="pole-filter-component"
+            />
+          </div>
         </div>
       </div>
       
