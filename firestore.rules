@@ -61,6 +61,12 @@ service cloud.firestore {
       allow create, update, delete: if hasRole('Administrateur');
     }
 
+    // Règles pour la collection 'markerPreferences'
+    match /markerPreferences/{prefId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if hasRole('Administrateur');
+    }
+
     // Règle par défaut : refuser l'accès
     match /{document=**} {
       allow read, write: if false;

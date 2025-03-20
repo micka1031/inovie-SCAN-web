@@ -8,7 +8,7 @@ import { useAuth } from './AuthContext';
 // Interface pour le contexte
 interface SelasContextType {
   currentSelasId: string | null;
-  setCurrentSelasId: (id: string) => void;
+  setCurrentSelasId: (id: string | null) => void;
   availableSelas: SELAS[];
   loading: boolean;
   error: string | null;
@@ -94,8 +94,12 @@ export const SelasProvider: React.FC<SelasProviderProps> = ({ children }) => {
   }, [currentSelasId, currentUser]);
   
   // Fonction pour définir l'ID SELAS actuel
-  const setCurrentSelasId = (id: string) => {
-    localStorage.setItem('currentSelasId', id);
+  const setCurrentSelasId = (id: string | null) => {
+    if (id) {
+      localStorage.setItem('currentSelasId', id);
+    } else {
+      localStorage.removeItem('currentSelasId');
+    }
     setCurrentSelasIdState(id);
   };
   
