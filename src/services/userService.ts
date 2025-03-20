@@ -1,5 +1,4 @@
 import { 
-  getAuth, 
   createUserWithEmailAndPassword, 
   sendPasswordResetEmail,
   signInWithEmailAndPassword
@@ -11,8 +10,12 @@ import {
   doc, 
   deleteDoc 
 } from 'firebase/firestore';
-import { db, PRODUCTION_URL, auth, actionCodeSettings } from '../firebase';
-import { initializeApp } from 'firebase/app';
+import { 
+  db, 
+  auth, 
+  PRODUCTION_URL,
+  actionCodeSettings 
+} from '../config/firebase';
 
 interface UserData {
   email: string;
