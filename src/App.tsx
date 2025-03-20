@@ -8,6 +8,8 @@ import Passages from './components/Passages';
 import Sites from './components/Sites';
 import Tournees from './components/Tournees';
 import Vehicules from './components/Vehicules';
+import VehiculesMUI from './components/VehiculesMUI';
+import VehiculesMaterialTable from './components/VehiculesMaterialTable';
 import UserManagement from './components/UserManagement';
 import InitPassages from './components/InitPassages';
 import MapView from './components/MapView';
@@ -22,6 +24,12 @@ import LoadingScreen from './components/LoadingScreen';
 import { RoleService, canAccessPage } from './services/RoleService';
 import { PAGES } from './utils/pageAccessUtils';
 import { Role } from './types/roles';
+import { ListAlt, LocalShipping, DirectionsCar, LocationOn, People } from '@mui/icons-material';
+import DashboardIcon from './components/DashboardIcon';
+import PassageDetails from './components/PassageDetails';
+import TourneeDetails from './components/TourneeDetails';
+import Login from './components/Login';
+import ResetPassword from './components/ResetPassword';
 
 // Composant principal de l'application
 const App: React.FC = () => {
@@ -202,6 +210,20 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
           )
         },
         {
+          path: 'passages/:id',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'Coursier', 'default']}
+              requiredPermissions={['passages.view']}
+              pageName={PAGES.PASSAGE_DETAILS}
+              roles={roles}
+            >
+              <PassageDetails />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'sites',
           element: (
             <ProtectedRoute 
@@ -230,6 +252,20 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
           )
         },
         {
+          path: 'tournees/:id',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'Coursier', 'default']}
+              requiredPermissions={['tournees.view']}
+              pageName={PAGES.TOURNEE_DETAILS}
+              roles={roles}
+            >
+              <TourneeDetails />
+            </ProtectedRoute>
+          )
+        },
+        {
           path: 'vehicules',
           element: (
             <ProtectedRoute 
@@ -240,6 +276,34 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               roles={roles}
             >
               <Vehicules />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'vehicules-mui',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'default']}
+              requiredPermissions={['vehicules.view']}
+              pageName={PAGES.VEHICULES}
+              roles={roles}
+            >
+              <VehiculesMUI />
+            </ProtectedRoute>
+          )
+        },
+        {
+          path: 'vehicules-advanced',
+          element: (
+            <ProtectedRoute 
+              userRole={userRole} 
+              allowedRoles={['Administrateur', 'Utilisateur', 'default']}
+              requiredPermissions={['vehicules.view']}
+              pageName={PAGES.VEHICULES_ADVANCED}
+              roles={roles}
+            >
+              <VehiculesMaterialTable />
             </ProtectedRoute>
           )
         },
@@ -328,6 +392,14 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
     {
       path: '/',
       element: <LoginScreen />
+    },
+    {
+      path: '/login',
+      element: <Login />
+    },
+    {
+      path: '/reset-password',
+      element: <ResetPassword />
     },
     {
       path: '*',

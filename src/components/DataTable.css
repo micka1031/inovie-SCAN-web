@@ -100,3 +100,105 @@
     padding: 8px;
   }
 }
+
+/* Styles pour le DataGrid */
+.MuiDataGrid-root {
+  border: none !important;
+  font-family: 'Roboto', sans-serif;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: #f5f5f5;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.MuiDataGrid-columnHeaderTitle {
+  font-weight: 600;
+}
+
+.MuiDataGrid-cell {
+  padding: 8px 16px !important;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.MuiDataGrid-row:hover {
+  background-color: rgba(0, 51, 160, 0.04);
+}
+
+.MuiDataGrid-row.Mui-selected {
+  background-color: rgba(0, 51, 160, 0.08) !important;
+}
+
+.MuiDataGrid-row.Mui-selected:hover {
+  background-color: rgba(0, 51, 160, 0.12) !important;
+}
+
+/* Toolbar styles */
+.MuiDataGrid-toolbarContainer {
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+}
+
+/* Pagination styles */
+.MuiTablePagination-root {
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Editables cells */
+.MuiDataGrid-editInputCell {
+  padding: 0 !important;
+}
+
+/* Status indicators */
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.status-actif,
+.status-terminee,
+.status-Livré {
+  background-color: rgba(84, 214, 44, 0.16);
+  color: #229A16 !important;
+}
+
+.status-inactif,
+.status-en_attente {
+  background-color: rgba(145, 158, 171, 0.16);
+  color: #637381 !important;
+}
+
+.status-maintenance,
+.status-en_cours,
+.status-En-cours {
+  background-color: rgba(255, 171, 0, 0.16);
+  color: #B76E00 !important;
+}
+
+.status-annulee {
+  background-color: rgba(255, 72, 66, 0.16);
+  color: #B72136 !important;
+}
+
+/* Custom scrollbar */
+.MuiDataGrid-virtualScroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.MuiDataGrid-virtualScroller::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 4px;
+}
+
+.MuiDataGrid-virtualScroller::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
+}
