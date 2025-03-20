@@ -9,6 +9,14 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { RoleService, canAccessPage, getRoleByName } from '../services/RoleService';
 import { PAGES } from '../utils/pageAccessUtils';
 import SELASSelector from './SELASSelector';
+import { 
+  ListAlt, 
+  LocalShipping, 
+  DirectionsCar, 
+  LocationOn, 
+  People,
+  TableChart
+} from '@mui/icons-material';
 
 interface NavbarProps {
   user: {
@@ -212,6 +220,15 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
     }
   };
   
+  const navigationItems = [
+    {
+      path: '/vehicules-tanstack',
+      label: 'Véhicules (TanStack)',
+      icon: <TableChart />,
+      requiredPermission: 'vehicules.view'
+    },
+  ];
+  
   return (
     <div className="navbar-container">
       {/* Header avec logo et infos utilisateur */}
@@ -346,24 +363,13 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         )}
         
         {pageAccess.vehicules && (
-          <Link to="/vehicules-mui" className={`nav-item ${location.pathname === '/vehicules-mui' ? 'active' : ''}`}>
+          <Link to="/vehicules-tanstack" className={`nav-item ${location.pathname === '/vehicules-tanstack' ? 'active' : ''}`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
               <circle cx="7" cy="17" r="2"></circle>
               <circle cx="17" cy="17" r="2"></circle>
             </svg>
-            Véhicules (MUI)
-          </Link>
-        )}
-        
-        {pageAccess.vehicules && (
-          <Link to="/vehicules-simple" className={`nav-item ${location.pathname === '/vehicules-simple' ? 'active' : ''}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
-              <circle cx="7" cy="17" r="2"></circle>
-              <circle cx="17" cy="17" r="2"></circle>
-            </svg>
-            Véhicules (Simplifié)
+            Véhicules (TanStack)
           </Link>
         )}
         
