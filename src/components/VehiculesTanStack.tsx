@@ -1,24 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import {
-  useReactTable,
-  getCoreRowModel,
-  getSortedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  flexRender,
-  createColumnHelper,
-  ColumnDef,
-  SortingState,
-  ColumnFiltersState,
-  VisibilityState,
-  ColumnOrderState,
-  Row,
-  RowModel,
-  Column,
-} from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { 
   Button, 
   Stack, 
@@ -33,18 +15,16 @@ import {
   Tooltip, 
   Container,
   Paper,
-  Checkbox,
-  Select,
-  FormControl,
-  InputLabel,
-  InputAdornment,
   Chip,
+  InputAdornment,
+  DialogContentText,
 } from '@mui/material';
+import { DataGrid, GridColDef, GridRenderCellParams, GridColumnOrderChangeParams } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { usePoles } from '../services/PoleService';
 import PoleFilter from './PoleFilter';
 import PoleSelector from './PoleSelector';
@@ -58,26 +38,19 @@ interface Vehicule {
   type: string;
   annee: number;
   statut: 'actif' | 'maintenance' | 'inactif';
-  dernierEntretien?: string;
+  dernierEntretien?: string | Date;
   coursierAssigne?: string;
   kilometrage: number;
   pole?: string;
 }
 
-const columnHelper = createColumnHelper<Vehicule>();
-
 const VehiculesTanStack: React.FC = () => {
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
-  const [filteredVehicules, setFilteredVehicules] = useState<Vehicule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVehicules, setSelectedVehicules] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [selectedPole, setSelectedPole] = useState<string>('');
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
   
   // État pour le modal d'édition
   const [modalOpen, setModalOpen] = useState(false);
@@ -93,21 +66,14 @@ const VehiculesTanStack: React.FC = () => {
   });
   
   const { poles } = usePoles();
+  const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  const [columnTitles, setColumnTitles] = useState<{ [key: string]: string }>({});
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [editingColumn, setEditingColumn] = useState<string | null>(null);
 
   useEffect(() => {
     fetchVehicules();
   }, []);
-
-  useEffect(() => {
-    let results = vehicules;
-
-    // Filtrer par pôle si un pôle est sélectionné
-    if (selectedPole) {
-      results = results.filter(vehicule => vehicule.pole === selectedPole);
-    }
-
-    setFilteredVehicules(results);
-  }, [selectedPole, vehicules]);
 
   const fetchVehicules = async () => {
     try {
@@ -136,136 +102,162 @@ const VehiculesTanStack: React.FC = () => {
     }
   };
 
-  const columns = useMemo<ColumnDef<Vehicule, any>[]>(
-    () => [
-      columnHelper.accessor('immatriculation', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('marque', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('modele', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('type', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('annee', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('statut', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => (
-          <Chip
-            label={info.getValue()}
-            color={
-              info.getValue() === 'actif' ? 'success' :
-              info.getValue() === 'maintenance' ? 'warning' : 'default'
-            }
-          />
-        ),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('dernierEntretien', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => {
-          const date = info.getValue();
-          return date ? new Date(date).toLocaleDateString('fr-FR') : '-';
-        },
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('coursierAssigne', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => info.getValue(),
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('kilometrage', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => `${info.getValue()} km`,
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('pole', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => {
-          const poleId = info.getValue();
-          const pole = poles.find(p => p.id === poleId);
-          return pole ? pole.nom : poleId;
-        },
-        enableSorting: true,
-        enableHiding: true,
-      }),
-      columnHelper.accessor('id', {
-        header: ({ column }) => <DragHandleColumnHeader column={column} />,
-        cell: info => (
-          <Stack direction="row" spacing={1}>
-            <Tooltip title="Supprimer">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  if (window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
-                    deleteDoc(doc(db, 'vehicules', info.getValue()));
-                    fetchVehicules();
-                  }
-                }}
-                aria-label="supprimer"
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Stack>
-        ),
-        enableSorting: false,
-        enableHiding: true,
-      }),
-    ],
-    [poles]
-  );
+  // Fonction de préparation des données pour le DataGrid
+  const prepareDataForGrid = (data: Vehicule[]): Vehicule[] => {
+    return data.map(vehicule => {
+      const prepared = { ...vehicule };
+      
+      // Convertir les dates en objets Date seulement si elles sont des chaînes
+      if (prepared.dernierEntretien && typeof prepared.dernierEntretien === 'string') {
+        prepared.dernierEntretien = new Date(prepared.dernierEntretien);
+      }
+      
+      // S'assurer que les valeurs numériques sont des nombres
+      prepared.kilometrage = Number(prepared.kilometrage);
+      prepared.annee = Number(prepared.annee);
+      
+      return prepared;
+    });
+  };
 
-  const table = useReactTable({
-    data: filteredVehicules || [],
-    columns,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      columnOrder,
+  const handleColumnOrderChange = (params: GridColumnOrderChangeParams) => {
+    setColumnOrder(params.columnOrder);
+  };
+
+  const handleColumnTitleChange = (columnField: string, newTitle: string) => {
+    setColumnTitles(prev => ({
+      ...prev,
+      [columnField]: newTitle
+    }));
+    setEditingColumn(null);
+  };
+
+  const handleOpenSettings = () => {
+    setSettingsModalOpen(true);
+  };
+
+  const handleCloseSettings = () => {
+    setSettingsModalOpen(false);
+    setEditingColumn(null);
+  };
+
+  // Modifier la définition des colonnes pour utiliser les titres personnalisés
+  const columns: GridColDef[] = [
+    { 
+      field: 'immatriculation', 
+      headerName: columnTitles['immatriculation'] || 'Immatriculation', 
+      width: 150,
+      editable: editMode,
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onColumnOrderChange: setColumnOrder,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  const rowModel = table.getRowModel();
-  const { getVirtualItems } = useVirtualizer({
-    count: rowModel.rows.length,
-    getScrollElement: () => document.querySelector('.table-container'),
-    estimateSize: () => 35,
-    overscan: 10,
-  });
+    { 
+      field: 'marque', 
+      headerName: columnTitles['marque'] || 'Marque', 
+      width: 150,
+      editable: editMode,
+    },
+    { 
+      field: 'modele', 
+      headerName: columnTitles['modele'] || 'Modèle', 
+      width: 150,
+      editable: editMode,
+    },
+    { 
+      field: 'type', 
+      headerName: columnTitles['type'] || 'Type', 
+      width: 150,
+      editable: editMode,
+      type: 'singleSelect',
+      valueOptions: ['Voiture', 'Utilitaire', 'Camion', 'Autre'],
+    },
+    { 
+      field: 'annee', 
+      headerName: columnTitles['annee'] || 'Année', 
+      width: 100,
+      editable: editMode,
+      type: 'number',
+    },
+    { 
+      field: 'statut', 
+      headerName: columnTitles['statut'] || 'Statut', 
+      width: 150,
+      editable: editMode,
+      type: 'singleSelect',
+      valueOptions: ['actif', 'maintenance', 'inactif'],
+      renderCell: (params: GridRenderCellParams) => (
+        <Chip
+          label={params.value}
+          color={
+            params.value === 'actif' ? 'success' :
+            params.value === 'maintenance' ? 'warning' : 'default'
+          }
+        />
+      ),
+    },
+    { 
+      field: 'dernierEntretien', 
+      headerName: columnTitles['dernierEntretien'] || 'Dernier entretien', 
+      width: 150,
+      editable: editMode,
+      type: 'date',
+      renderCell: (params: GridRenderCellParams) => {
+        if (params.value) {
+          return params.value instanceof Date 
+            ? params.value.toLocaleDateString('fr-FR')
+            : new Date(params.value).toLocaleDateString('fr-FR');
+        }
+        return '-';
+      },
+    },
+    { 
+      field: 'coursierAssigne', 
+      headerName: columnTitles['coursierAssigne'] || 'Coursier assigné', 
+      width: 150,
+      editable: editMode,
+    },
+    { 
+      field: 'kilometrage', 
+      headerName: columnTitles['kilometrage'] || 'Kilométrage', 
+      width: 150,
+      editable: editMode,
+      type: 'number',
+      renderCell: (params: GridRenderCellParams) => `${params.value} km`,
+    },
+    { 
+      field: 'pole', 
+      headerName: columnTitles['pole'] || 'Pôle', 
+      width: 150,
+      editable: editMode,
+      renderCell: (params: GridRenderCellParams) => {
+        if (!params.value) return '-';
+        const pole = poles.find(p => p.id === params.value);
+        return pole ? pole.nom : params.value;
+      },
+    },
+    {
+      field: 'actions',
+      headerName: columnTitles['actions'] || 'Actions',
+      width: 100,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams) => (
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Supprimer">
+            <IconButton
+              size="small"
+              onClick={() => {
+                if (window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) {
+                  deleteDoc(doc(db, 'vehicules', params.row.id));
+                  fetchVehicules();
+                }
+              }}
+              aria-label="supprimer"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
+    },
+  ];
 
   const handlePoleChange = (pole: string) => {
     setSelectedPole(pole);
@@ -273,8 +265,24 @@ const VehiculesTanStack: React.FC = () => {
 
   const handleOpenModal = (vehicule?: Vehicule) => {
     if (vehicule) {
-      setCurrentVehicule({ ...vehicule });
+      // Pour l'édition, préparer les valeurs correctement
+      const editableVehicule = { ...vehicule };
+      
+      // Formater la date pour l'input de type date (YYYY-MM-DD)
+      if (editableVehicule.dernierEntretien) {
+        const date = editableVehicule.dernierEntretien instanceof Date 
+          ? editableVehicule.dernierEntretien
+          : new Date(editableVehicule.dernierEntretien);
+          
+        // Format YYYY-MM-DD pour l'input date HTML
+        editableVehicule.dernierEntretien = date.toISOString().split('T')[0];
+      } else {
+        editableVehicule.dernierEntretien = "";
+      }
+      
+      setCurrentVehicule(editableVehicule);
     } else {
+      // Pour un nouveau véhicule
       setCurrentVehicule({
         immatriculation: '',
         marque: '',
@@ -283,7 +291,8 @@ const VehiculesTanStack: React.FC = () => {
         annee: new Date().getFullYear(),
         statut: 'actif',
         coursierAssigne: '',
-        kilometrage: 0
+        kilometrage: 0,
+        dernierEntretien: ""
       });
     }
     setModalOpen(true);
@@ -295,10 +304,19 @@ const VehiculesTanStack: React.FC = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setCurrentVehicule({
-      ...currentVehicule,
-      [name]: name === 'annee' || name === 'kilometrage' ? parseInt(value) : value
-    });
+    
+    // Traitement spécial pour différents types de champs
+    if (name === 'annee' || name === 'kilometrage') {
+      setCurrentVehicule({
+        ...currentVehicule,
+        [name]: parseInt(value) || 0
+      });
+    } else {
+      setCurrentVehicule({
+        ...currentVehicule,
+        [name]: value
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -307,17 +325,22 @@ const VehiculesTanStack: React.FC = () => {
         alert('Veuillez remplir tous les champs obligatoires');
         return;
       }
+      
+      // Préparer les données avant de les envoyer à Firestore
+      const vehiculeData = { 
+        ...currentVehicule,
+        // Convertir les dates en chaînes pour le stockage
+        dernierEntretien: currentVehicule.dernierEntretien instanceof Date 
+          ? currentVehicule.dernierEntretien.toISOString()
+          : currentVehicule.dernierEntretien
+      };
 
       if (currentVehicule.id) {
         // Mise à jour
-        await updateDoc(doc(db, 'vehicules', currentVehicule.id), {
-          ...currentVehicule
-        });
+        await updateDoc(doc(db, 'vehicules', currentVehicule.id), vehiculeData);
       } else {
         // Création
-        await addDoc(collection(db, 'vehicules'), {
-          ...currentVehicule
-        });
+        await addDoc(collection(db, 'vehicules'), vehiculeData);
       }
 
       // Rafraîchir les données
@@ -358,23 +381,21 @@ const VehiculesTanStack: React.FC = () => {
     handleOpenModal();
   };
 
-  const handleSelectionChange = (id: string) => {
-    setSelectedVehicules(prev => 
-      prev.includes(id) 
-        ? prev.filter(v => v !== id)
-        : [...prev, id]
-    );
-  };
-
   const exportToCSV = () => {
-    const headers = table.getAllColumns()
-      .filter(column => column.getCanHide() && column.getIsVisible())
-      .map(column => column.columnDef.header as string);
+    const headers = columns
+      .filter(col => col.field !== 'actions')
+      .map(col => col.headerName);
     
-    const rows = table.getRowModel().rows.map(row => 
-      table.getAllColumns()
-        .filter(column => column.getCanHide() && column.getIsVisible())
-        .map(column => row.getValue(column.id))
+    const rows = vehicules.map(vehicule => 
+      columns
+        .filter(col => col.field !== 'actions')
+        .map(col => {
+          if (col.field === 'pole') {
+            const pole = poles.find(p => p.id === vehicule[col.field as keyof Vehicule]);
+            return pole ? pole.nom : vehicule[col.field as keyof Vehicule];
+          }
+          return vehicule[col.field as keyof Vehicule];
+        })
     );
 
     const csvContent = [
@@ -389,37 +410,10 @@ const VehiculesTanStack: React.FC = () => {
     link.click();
   };
 
-  // Composant pour le drag handle des colonnes
-  const DragHandleColumnHeader = ({ column }: { column: Column<Vehicule, unknown> }) => {
-    return (
-      <div
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', column.id);
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-        }}
-        onDrop={(e) => {
-          e.preventDefault();
-          const sourceId = e.dataTransfer.getData('text/plain');
-          const targetId = column.id;
-          if (sourceId !== targetId) {
-            const sourceIndex = table.getAllColumns().findIndex(col => col.id === sourceId);
-            const targetIndex = table.getAllColumns().findIndex(col => col.id === targetId);
-            const newColumnOrder = [...table.getState().columnOrder];
-            const [removed] = newColumnOrder.splice(sourceIndex, 1);
-            newColumnOrder.splice(targetIndex, 0, removed);
-            table.setColumnOrder(newColumnOrder);
-          }
-        }}
-        style={{ cursor: 'move', display: 'inline-flex', alignItems: 'center' }}
-      >
-        <DragIndicatorIcon style={{ marginRight: '8px', fontSize: '20px' }} />
-        {flexRender(column.columnDef.header, column.getContext())}
-      </div>
-    );
-  };
+  // Utiliser la fonction lors du filtrage des données
+  const filteredVehicules = selectedPole
+    ? prepareDataForGrid(vehicules.filter(vehicule => vehicule.pole === selectedPole))
+    : prepareDataForGrid(vehicules);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -432,8 +426,15 @@ const VehiculesTanStack: React.FC = () => {
             spacing={2} 
             sx={{ mb: 3 }}
           >
-            <h2 className="section-title">Véhicules (TanStack Table)</h2>
+            <h2 className="section-title">Véhicules (MUI DataGrid)</h2>
             <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                onClick={handleOpenSettings}
+                startIcon={<SettingsIcon />}
+              >
+                Paramètres des colonnes
+              </Button>
               <Button
                 variant="contained"
                 color={editMode ? "success" : "primary"}
@@ -481,82 +482,53 @@ const VehiculesTanStack: React.FC = () => {
           </Box>
 
           <Box sx={{ height: 400, width: '100%' }}>
-            <table>
-              <thead>
-                {table.getHeaderGroups().map(headerGroup => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
-                      <th key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {(() => {
-                  const rowModel = table.getRowModel() as RowModel<Vehicule>;
-                  return rowModel.rows.length > 0 ? (
-                    rowModel.rows.map((row: Row<Vehicule>) => (
-                      <tr key={row.id}>
-                        {row.getVisibleCells().map(cell => (
-                          <td key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center">
-                        Aucun véhicule trouvé
-                      </td>
-                    </tr>
-                  );
-                })()}
-              </tbody>
-            </table>
-          </Box>
-
-          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Stack direction="row" spacing={2}>
-              <Button
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                {'<<'}
-              </Button>
-              <Button
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                {'<'}
-              </Button>
-              <Button
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                {'>'}
-              </Button>
-              <Button
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                {'>>'}
-              </Button>
-            </Stack>
-            <span>
-              Page {table.getState().pagination.pageIndex + 1} sur{' '}
-              {table.getPageCount()}
-            </span>
+            <DataGrid
+              rows={filteredVehicules}
+              columns={columns}
+              loading={loading}
+              checkboxSelection={editMode}
+              onRowSelectionModelChange={(newSelection) => {
+                setSelectedVehicules(newSelection as string[]);
+              }}
+              columnOrder={columnOrder}
+              onColumnOrderChange={handleColumnOrderChange}
+              disableRowSelectionOnClick
+              pageSizeOptions={[10, 25, 50]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+            />
           </Box>
         </Stack>
       </Paper>
+
+      {/* Modal pour les paramètres des colonnes */}
+      <Dialog open={settingsModalOpen} onClose={handleCloseSettings} maxWidth="sm" fullWidth>
+        <DialogTitle>Paramètres des colonnes</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 2 }}>
+            {columns.map((column) => (
+              <Box key={column.field} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <TextField
+                  label="Titre de la colonne"
+                  value={editingColumn === column.field ? columnTitles[column.field] || column.headerName : columnTitles[column.field] || column.headerName}
+                  onChange={(e) => {
+                    if (editingColumn === column.field) {
+                      handleColumnTitleChange(column.field, e.target.value);
+                    }
+                  }}
+                  onFocus={() => setEditingColumn(column.field)}
+                  onBlur={() => setEditingColumn(null)}
+                  fullWidth
+                />
+              </Box>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseSettings}>Fermer</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Modal pour ajouter/modifier un véhicule */}
       <Dialog open={modalOpen} onClose={handleCloseModal} maxWidth="md" fullWidth>
