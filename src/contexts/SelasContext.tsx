@@ -3,6 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { SELAS } from '../types/SELAS';
 import { SELASService } from '../services/SELASService';
+import { useAuth } from './AuthContext';
 
 // Interface pour le contexte
 interface SelasContextType {
@@ -18,7 +19,7 @@ const SelasContext = createContext<SelasContextType>({
   currentSelasId: null,
   setCurrentSelasId: () => {},
   availableSelas: [],
-  loading: true,
+  loading: false,
   error: null
 });
 
@@ -36,12 +37,20 @@ export const SelasProvider: React.FC<SelasProviderProps> = ({ children }) => {
     localStorage.getItem('currentSelasId')
   );
   const [availableSelas, setAvailableSelas] = useState<SELAS[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { currentUser } = useAuth();
   
-  // Charger la liste des SELAS disponibles
+  // Charger la liste des SELAS disponibles uniquement si l'utilisateur est authentifié
   useEffect(() => {
     const fetchSelas = async () => {
+      // Si l'utilisateur n'est pas authentifié, ne rien faire
+      if (!currentUser) {
+        setAvailableSelas([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const selasService = SELASService.getInstance();
@@ -82,7 +91,7 @@ export const SelasProvider: React.FC<SelasProviderProps> = ({ children }) => {
     };
     
     fetchSelas();
-  }, [currentSelasId]);
+  }, [currentSelasId, currentUser]);
   
   // Fonction pour définir l'ID SELAS actuel
   const setCurrentSelasId = (id: string) => {
