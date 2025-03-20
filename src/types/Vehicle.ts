@@ -1,193 +1,188 @@
+export type VehicleType = 'car' | 'van' | 'truck' | 'motorcycle' | 'bicycle';
+export type VehicleStatus = 'active' | 'maintenance' | 'inactive' | 'sold';
+export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'lpg';
+export type DocumentStatus = 'valid' | 'expired' | 'pending';
+export type InspectionStatus = 'passed' | 'failed' | 'pending';
+export type MaintenanceType = 'routine' | 'repair' | 'inspection' | 'other';
+
+export interface Document {
+  id: string;
+  title: string;
+  type: string;
+  fileUrl: string;
+  thumbnailUrl?: string;
+  issueDate: string;
+  expiryDate: string;
+  status: DocumentStatus;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Photo {
+  id: string;
+  url: string;
+  thumbnailUrl?: string;
+  description?: string;
+  takenAt: string;
+}
+
+export interface InspectionItem {
+  id: string;
+  name: string;
+  status: InspectionStatus;
+  notes?: string;
+}
+
+export interface Inspection {
+  id: string;
+  date: string;
+  type: string;
+  status: InspectionStatus;
+  items: InspectionItem[];
+  photos: Photo[];
+  notes?: string;
+  nextDueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  date: string;
+  type: MaintenanceType;
+  description: string;
+  mileage: string;
+  cost: number;
+  provider?: string;
+  nextDueDate?: string;
+  notes?: string;
+  photos?: Photo[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InsuranceInfo {
+  provider: string;
+  policyNumber: string;
+  startDate: string;
+  endDate: string;
+  coverage: string[];
+  deductible: number;
+  premium: number;
+  notes?: string;
+}
+
+export interface EngineSpecs {
+  type: string;
+  displacement: string;
+  power: string;
+  torque: string;
+  cylinders: number;
+  fuelSystem: string;
+  transmission: string;
+}
+
+export interface Dimensions {
+  length: string;
+  width: string;
+  height: string;
+  wheelbase: string;
+  groundClearance: string;
+  cargoVolume?: string;
+}
+
+export interface Performance {
+  acceleration: string;
+  topSpeed: string;
+  brakingDistance: string;
+  fuelConsumption: string;
+  range?: string;
+}
+
+export interface Tires {
+  front: string;
+  rear: string;
+  spare: string;
+  pressure: {
+    front: string;
+    rear: string;
+    spare: string;
+  };
+}
+
+export interface Fluids {
+  engineOil: {
+    type: string;
+    capacity: string;
+    changeInterval: string;
+  };
+  coolant: {
+    type: string;
+    capacity: string;
+    changeInterval: string;
+  };
+  transmission: {
+    type: string;
+    capacity: string;
+    changeInterval: string;
+  };
+  brake: {
+    type: string;
+    capacity: string;
+    changeInterval: string;
+  };
+}
+
+export interface Electrical {
+  battery: {
+    type: string;
+    voltage: string;
+    capacity: string;
+    location: string;
+  };
+  alternator: {
+    output: string;
+    type: string;
+  };
+}
+
+export interface TechnicalSpecifications {
+  engine: EngineSpecs;
+  dimensions: Dimensions;
+  performance: Performance;
+  tires: Tires;
+  fluids: Fluids;
+  electrical: Electrical;
+}
+
 export interface Vehicle {
   id: string;
   brand: string;
   model: string;
   registrationNumber: string;
-  type: 'car' | 'truck' | 'van' | 'motorcycle';
-  status: 'active' | 'maintenance' | 'inactive' | 'out_of_service';
+  type: VehicleType;
+  status: VehicleStatus;
   purchaseDate: string;
-  lastMaintenanceDate: string;
-  nextMaintenanceDate: string;
-  mileage: number;
-  fuelType: 'diesel' | 'petrol' | 'electric' | 'hybrid' | 'hydrogen';
-  capacity?: number; // Pour les camions/vans
-  notes?: string;
-  assignedDriver?: string; // ID du coursier assigné au véhicule
-  documents: VehicleDocument[];
-  inspections: VehicleInspection[];
+  mileage: string;
+  fuelType: FuelType;
+  documents: Document[];
+  inspections: Inspection[];
   maintenanceHistory: MaintenanceRecord[];
-  insuranceInfo: InsuranceInfo;
-  technicalSpecifications: TechnicalSpecifications;
+  insuranceInfo: InsuranceInfo | null;
+  technicalSpecifications: TechnicalSpecifications | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface VehicleFilters {
   search?: string;
-  type?: Vehicle['type'];
-  status?: Vehicle['status'];
-  brand?: string;
-  minMileage?: number;
-  maxMileage?: number;
-  needsMaintenance?: boolean;
+  type?: VehicleType;
+  status?: VehicleStatus;
   assignedDriver?: string;
-  documentExpiresWithin?: number; // en jours
-  lastInspectionStatus?: InspectionStatus;
-}
-
-// Interface pour les documents liés au véhicule
-export interface VehicleDocument {
-  id: string;
-  type: 'insurance' | 'registration' | 'technical_control' | 'maintenance_report' | 'purchase_invoice' | 'other';
-  title: string;
-  fileUrl: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  issueDate: string;
-  expiryDate?: string;
-  status: 'valid' | 'expired' | 'about_to_expire';
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// État des éléments inspectés
-export type InspectionItemStatus = 'ok' | 'attention' | 'critical' | 'not_applicable';
-
-// Statut global de l'inspection
-export type InspectionStatus = 'passed' | 'passed_with_warnings' | 'failed' | 'incomplete';
-
-// Élément spécifique vérifié pendant une inspection
-export interface InspectionItem {
-  id: string;
-  category: 'exterior' | 'interior' | 'mechanical' | 'electrical' | 'safety' | 'fluids' | 'tires' | 'other';
-  name: string;
-  status: InspectionItemStatus;
-  comments?: string;
-  photos: Photo[];
-}
-
-// Interface pour les photos
-export interface Photo {
-  id: string;
-  url: string;
-  thumbnailUrl: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-  metadata?: {
-    width?: number;
-    height?: number;
-    location?: {
-      latitude: number;
-      longitude: number;
-    }
-  };
-}
-
-// Interface pour les vérifications effectuées par les coursiers
-export interface VehicleInspection {
-  id: string;
-  vehicleId: string;
-  inspectedBy: string; // ID du coursier
-  inspectorName: string; // Nom du coursier
-  date: string;
-  odometer: number;
-  status: InspectionStatus;
-  inspectionItems: InspectionItem[];
-  generalComments?: string;
-  actionRequired: boolean;
-  actionDescription?: string;
-  actionDueDate?: string;
-  actionCompletedBy?: string;
-  actionCompletedDate?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Interface pour l'historique de maintenance
-export interface MaintenanceRecord {
-  id: string;
-  vehicleId: string;
-  type: 'scheduled' | 'repair' | 'emergency' | 'recall';
-  date: string;
-  odometer: number;
-  description: string;
-  performedBy: string; // Garage ou mécanicien
-  cost: number;
-  currency: string;
-  parts?: MaintenancePart[];
-  documents: VehicleDocument[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Interface pour les pièces utilisées lors d'une maintenance
-export interface MaintenancePart {
-  id: string;
-  name: string;
-  partNumber?: string;
-  quantity: number;
-  unitCost: number;
-  totalCost: number;
-  warranty?: {
-    duration: number; // en mois
-    expiryDate: string;
-  };
-}
-
-// Interface pour les informations d'assurance
-export interface InsuranceInfo {
-  provider: string;
-  policyNumber: string;
-  validFrom: string;
-  validUntil: string;
-  coverageType: 'basic' | 'intermediate' | 'comprehensive';
-  monthlyPremium: number;
-  currency: string;
-  documents: VehicleDocument[];
-  contactInfo?: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
-
-// Interface pour les spécifications techniques
-export interface TechnicalSpecifications {
-  vin: string; // Vehicle Identification Number
-  year: number;
-  engine: {
-    type: string;
-    power: number; // en chevaux ou kW
-    cylinderCapacity?: number; // en cc pour les moteurs à combustion
-  };
-  transmission: 'manual' | 'automatic' | 'semi-automatic';
-  weight: number; // en kg
-  dimensions: {
-    length: number; // en mm
-    width: number; // en mm
-    height: number; // en mm
-  };
-  maxPayload?: number; // pour les vans/camions
-  maxTowingCapacity?: number;
-  fuelConsumption?: {
-    urban: number; // L/100km ou kWh/100km
-    extraUrban: number;
-    combined: number;
-  };
-  emissions?: {
-    co2: number; // g/km
-    emissionStandard: string; // ex: Euro 6, Euro 5
-  };
-  tires: {
-    frontSize: string;
-    rearSize: string;
-    recommendedPressure: {
-      front: number; // en bar ou psi
-      rear: number;
-    };
-  };
+  minMileage?: string;
+  maxMileage?: string;
+  maintenanceNeeded?: boolean;
+  inspectionNeeded?: boolean;
+  insuranceExpiring?: boolean;
 } 

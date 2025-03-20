@@ -1,13 +1,15 @@
 import { Vehicle, VehicleFilters, VehicleDocument, InsuranceInfo, MaintenanceRecord, TechnicalSpecifications } from '../types/Vehicle';
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, orderBy } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, orderBy, limit, startAfter, DocumentData } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db } from '../config/firebase';
+import { getStorage } from 'firebase/storage';
 
 class VehicleService {
-  private collection = 'vehicles';
-  private documentsCollection = 'vehicleDocuments';
-  private maintenanceCollection = 'maintenanceRecords';
-  private storageBasePath = 'vehicle-documents';
+  private collection = collection(db, 'vehicles');
+  private documentsCollection = collection(db, 'documents');
+  private maintenanceCollection = collection(db, 'maintenance');
+  private storage = getStorage();
+  private storageBasePath = 'vehicles';
   private initialized = false;
 
   // Données par défaut pour les véhicules
@@ -204,16 +206,11 @@ class VehicleService {
   // Initialiser les véhicules par défaut
   async initializeDefaultVehicles(): Promise<void> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
-
-      const vehiclesRef = collection(db, this.collection);
-      const snapshot = await getDocs(vehiclesRef);
-
+      const snapshot = await getDocs(this.collection);
       if (snapshot.empty) {
         console.log('Initialisation des véhicules par défaut...');
         for (const vehicle of this.defaultVehicles) {
-          await addDoc(vehiclesRef, vehicle);
+          await this.createVehicle(vehicle);
         }
         console.log('Véhicules par défaut initialisés avec succès');
       } else {
@@ -225,60 +222,40 @@ class VehicleService {
     }
   }
 
-  // Attendre que Firestore soit initialisé
-  private async waitForFirestore(): Promise<void> {
-    if (this.initialized) return;
-
-    try {
-      // Tenter une opération simple pour vérifier que Firestore est prêt
-      const vehiclesRef = collection(db, this.collection);
-      await getDocs(query(vehiclesRef, where('type', '==', 'test')));
-      this.initialized = true;
-    } catch (error) {
-      console.error('Erreur lors de l\'initialisation de Firestore:', error);
-      throw error;
-    }
-  }
-
   // Récupérer tous les véhicules avec filtres optionnels
   async getVehicles(filters: VehicleFilters = {}): Promise<Vehicle[]> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
+      let q = query(this.collection);
 
-      const vehiclesRef = collection(db, this.collection);
-      let q = query(vehiclesRef);
-
-      // Appliquer les filtres si présents
+      // Appliquer les filtres
       if (filters.type) {
         q = query(q, where('type', '==', filters.type));
       }
       if (filters.status) {
         q = query(q, where('status', '==', filters.status));
       }
-      if (filters.brand) {
-        q = query(q, where('brand', '==', filters.brand));
-      }
       if (filters.assignedDriver) {
         q = query(q, where('assignedDriver', '==', filters.assignedDriver));
       }
 
+      // Recherche par texte
+      if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        const snapshot = await getDocs(this.collection);
+        return snapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() } as Vehicle))
+          .filter(vehicle => 
+            vehicle.brand.toLowerCase().includes(searchTerm) ||
+            vehicle.model.toLowerCase().includes(searchTerm) ||
+            vehicle.registrationNumber.toLowerCase().includes(searchTerm)
+          );
+      }
+
       const snapshot = await getDocs(q);
-      const vehicles = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Vehicle[];
+      const vehicles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Vehicle));
 
       // Appliquer les filtres supplémentaires en mémoire
       return vehicles.filter(vehicle => {
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          return (
-            vehicle.brand.toLowerCase().includes(searchLower) ||
-            vehicle.model.toLowerCase().includes(searchLower) ||
-            vehicle.registrationNumber.toLowerCase().includes(searchLower)
-          );
-        }
         if (filters.minMileage && vehicle.mileage < filters.minMileage) return false;
         if (filters.maxMileage && vehicle.mileage > filters.maxMileage) return false;
         if (filters.needsMaintenance) {
@@ -316,20 +293,12 @@ class VehicleService {
   // Récupérer un véhicule par son ID
   async getVehicleById(id: string): Promise<Vehicle | null> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
-
-      const vehicleRef = doc(db, this.collection, id);
-      const vehicleDoc = await getDoc(vehicleRef);
-
-      if (!vehicleDoc.exists()) {
-        return null;
+      const docRef = doc(this.collection, id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as Vehicle;
       }
-
-      return {
-        id: vehicleDoc.id,
-        ...vehicleDoc.data()
-      } as Vehicle;
+      return null;
     } catch (error) {
       console.error('Erreur lors de la récupération du véhicule:', error);
       throw error;
@@ -337,30 +306,14 @@ class VehicleService {
   }
 
   // Créer un nouveau véhicule
-  async createVehicle(vehicleData: Omit<Vehicle, 'id'>): Promise<Vehicle> {
+  async createVehicle(vehicle: Omit<Vehicle, 'id'>): Promise<Vehicle> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
-
-      const vehiclesRef = collection(db, this.collection);
-      const now = new Date().toISOString();
-      
-      // S'assurer que les tableaux sont initialisés
-      const dataToSave = {
-        ...vehicleData,
-        documents: vehicleData.documents || [],
-        inspections: vehicleData.inspections || [],
-        maintenanceHistory: vehicleData.maintenanceHistory || [],
-        createdAt: now,
-        updatedAt: now
-      };
-      
-      const docRef = await addDoc(vehiclesRef, dataToSave);
-      
-      return {
-        id: docRef.id,
-        ...dataToSave
-      };
+      const docRef = await addDoc(this.collection, {
+        ...vehicle,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      return { id: docRef.id, ...vehicle };
     } catch (error) {
       console.error('Erreur lors de la création du véhicule:', error);
       throw error;
@@ -368,15 +321,12 @@ class VehicleService {
   }
 
   // Mettre à jour un véhicule existant
-  async updateVehicle(id: string, vehicleData: Partial<Vehicle>): Promise<void> {
+  async updateVehicle(id: string, data: Partial<Vehicle>): Promise<void> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
-
-      const vehicleRef = doc(db, this.collection, id);
-      await updateDoc(vehicleRef, {
-        ...vehicleData,
-        updatedAt: new Date().toISOString()
+      const docRef = doc(this.collection, id);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour du véhicule:', error);
@@ -387,21 +337,8 @@ class VehicleService {
   // Supprimer un véhicule
   async deleteVehicle(id: string): Promise<void> {
     try {
-      // Attendre que Firestore soit initialisé
-      await this.waitForFirestore();
-
-      // Récupérer d'abord le véhicule pour gérer les documents et autres ressources associées
-      const vehicle = await this.getVehicleById(id);
-      if (vehicle) {
-        // Supprimer tous les documents associés
-        for (const doc of vehicle.documents) {
-          await this.deleteDocument(doc.id);
-        }
-        
-        // Supprimer le véhicule lui-même
-        const vehicleRef = doc(db, this.collection, id);
-        await deleteDoc(vehicleRef);
-      }
+      const docRef = doc(this.collection, id);
+      await deleteDoc(docRef);
     } catch (error) {
       console.error('Erreur lors de la suppression du véhicule:', error);
       throw error;
@@ -413,24 +350,13 @@ class VehicleService {
   // Ajouter un document à un véhicule
   async addDocumentToVehicle(vehicleId: string, document: Omit<VehicleDocument, 'id' | 'createdAt' | 'updatedAt'>): Promise<VehicleDocument> {
     try {
-      const vehicle = await this.getVehicleById(vehicleId);
-      if (!vehicle) {
-        throw new Error('Véhicule non trouvé');
-      }
-      
-      const now = new Date().toISOString();
-      const newDocument: VehicleDocument = {
-        id: `doc_${Date.now()}`,
+      const docRef = await addDoc(this.documentsCollection, {
         ...document,
-        createdAt: now,
-        updatedAt: now
-      };
-      
-      // Ajouter le document au véhicule
-      const updatedDocuments = [...vehicle.documents, newDocument];
-      await this.updateVehicle(vehicleId, { documents: updatedDocuments });
-      
-      return newDocument;
+        vehicleId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      return { id: docRef.id, ...document };
     } catch (error) {
       console.error('Erreur lors de l\'ajout du document au véhicule:', error);
       throw error;
@@ -438,27 +364,13 @@ class VehicleService {
   }
   
   // Mettre à jour un document
-  async updateDocument(vehicleId: string, documentId: string, updates: Partial<VehicleDocument>): Promise<void> {
+  async updateDocument(documentId: string, data: Partial<VehicleDocument>): Promise<void> {
     try {
-      const vehicle = await this.getVehicleById(vehicleId);
-      if (!vehicle) {
-        throw new Error('Véhicule non trouvé');
-      }
-      
-      const documentIndex = vehicle.documents.findIndex(doc => doc.id === documentId);
-      if (documentIndex === -1) {
-        throw new Error('Document non trouvé');
-      }
-      
-      // Mettre à jour le document
-      const updatedDocuments = [...vehicle.documents];
-      updatedDocuments[documentIndex] = {
-        ...updatedDocuments[documentIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await this.updateVehicle(vehicleId, { documents: updatedDocuments });
+      const docRef = doc(this.documentsCollection, documentId);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Erreur lors de la mise à jour du document:', error);
       throw error;
@@ -468,31 +380,8 @@ class VehicleService {
   // Supprimer un document
   async deleteDocument(documentId: string): Promise<void> {
     try {
-      // Récupérer tous les véhicules (pas optimal mais nécessaire puisque nous ne savons pas auquel appartient le document)
-      const vehicles = await this.getVehicles();
-      
-      for (const vehicle of vehicles) {
-        const documentIndex = vehicle.documents.findIndex(doc => doc.id === documentId);
-        if (documentIndex !== -1) {
-          // Document trouvé, récupérer l'URL du fichier
-          const fileUrl = vehicle.documents[documentIndex].fileUrl;
-          
-          // Supprimer le fichier du storage
-          try {
-            const fileRef = ref(storage, fileUrl);
-            await deleteObject(fileRef);
-          } catch (storageError) {
-            console.warn('Erreur lors de la suppression du fichier du storage:', storageError);
-            // Continuer même si le fichier ne peut pas être supprimé du storage
-          }
-          
-          // Mettre à jour la liste des documents du véhicule
-          const updatedDocuments = vehicle.documents.filter(doc => doc.id !== documentId);
-          await this.updateVehicle(vehicle.id, { documents: updatedDocuments });
-          
-          break; // Le document a été trouvé et supprimé, sortir de la boucle
-        }
-      }
+      const docRef = doc(this.documentsCollection, documentId);
+      await deleteDoc(docRef);
     } catch (error) {
       console.error('Erreur lors de la suppression du document:', error);
       throw error;
@@ -500,37 +389,24 @@ class VehicleService {
   }
   
   // Uploader un document
-  async uploadDocument(file: File, vehicleId: string, docType: VehicleDocument['type']): Promise<string> {
+  async uploadDocument(vehicleId: string, file: File): Promise<{ url: string; thumbnailUrl: string }> {
     try {
       const timestamp = Date.now();
-      const fileName = `${vehicleId}_${docType}_${timestamp}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const filePath = `${this.storageBasePath}/${fileName}`;
-      const storageRef = ref(storage, filePath);
-
-      // Upload le fichier avec progression
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      return new Promise((resolve, reject) => {
-        uploadTask.on('state_changed',
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log('Upload progress:', progress);
-          },
-          (error) => {
-            console.error('Erreur lors de l\'upload:', error);
-            reject(error);
-          },
-          async () => {
-            try {
-              const url = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(url);
-            } catch (error) {
-              console.error('Erreur lors de la récupération de l\'URL:', error);
-              reject(error);
-            }
-          }
-        );
-      });
+      const fileName = `${vehicleId}/${timestamp}_${file.name}`;
+      const storageRef = ref(this.storage, `${this.storageBasePath}/${fileName}`);
+      
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      
+      // Pour les images, créer une miniature
+      let thumbnailUrl = url;
+      if (file.type.startsWith('image/')) {
+        const thumbnailRef = ref(this.storage, `${this.storageBasePath}/${vehicleId}/${timestamp}_thumb_${file.name}`);
+        // TODO: Implémenter la création de miniature
+        thumbnailUrl = url;
+      }
+      
+      return { url, thumbnailUrl };
     } catch (error) {
       console.error('Erreur lors de l\'upload du document:', error);
       throw error;
@@ -540,40 +416,15 @@ class VehicleService {
   // ===== Gestion de la maintenance =====
   
   // Ajouter un enregistrement de maintenance
-  async addMaintenanceRecord(vehicleId: string, record: Omit<MaintenanceRecord, 'id' | 'vehicleId' | 'createdAt' | 'updatedAt'>): Promise<MaintenanceRecord> {
+  async addMaintenanceRecord(vehicleId: string, record: Omit<MaintenanceRecord, 'id'>): Promise<MaintenanceRecord> {
     try {
-      const vehicle = await this.getVehicleById(vehicleId);
-      if (!vehicle) {
-        throw new Error('Véhicule non trouvé');
-      }
-      
-      const now = new Date().toISOString();
-      const newRecord: MaintenanceRecord = {
-        id: `maint_${Date.now()}`,
-        vehicleId,
+      const docRef = await addDoc(this.maintenanceCollection, {
         ...record,
-        createdAt: now,
-        updatedAt: now
-      };
-      
-      // Ajouter l'enregistrement à l'historique de maintenance du véhicule
-      const updatedHistory = [...vehicle.maintenanceHistory, newRecord];
-      
-      // Mettre à jour la date de dernière maintenance et le kilométrage si nécessaire
-      const updates: Partial<Vehicle> = {
-        maintenanceHistory: updatedHistory
-      };
-      
-      // Si c'est la maintenance la plus récente, mettre à jour lastMaintenanceDate
-      const recordDate = new Date(record.date);
-      const lastMaintenanceDate = new Date(vehicle.lastMaintenanceDate);
-      if (recordDate > lastMaintenanceDate) {
-        updates.lastMaintenanceDate = record.date;
-      }
-      
-      await this.updateVehicle(vehicleId, updates);
-      
-      return newRecord;
+        vehicleId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      return { id: docRef.id, ...record };
     } catch (error) {
       console.error('Erreur lors de l\'ajout de l\'enregistrement de maintenance:', error);
       throw error;
@@ -581,37 +432,13 @@ class VehicleService {
   }
   
   // Mettre à jour un enregistrement de maintenance
-  async updateMaintenanceRecord(vehicleId: string, recordId: string, updates: Partial<MaintenanceRecord>): Promise<void> {
+  async updateMaintenanceRecord(recordId: string, data: Partial<MaintenanceRecord>): Promise<void> {
     try {
-      const vehicle = await this.getVehicleById(vehicleId);
-      if (!vehicle) {
-        throw new Error('Véhicule non trouvé');
-      }
-      
-      const recordIndex = vehicle.maintenanceHistory.findIndex(rec => rec.id === recordId);
-      if (recordIndex === -1) {
-        throw new Error('Enregistrement de maintenance non trouvé');
-      }
-      
-      // Mettre à jour l'enregistrement
-      const updatedRecords = [...vehicle.maintenanceHistory];
-      updatedRecords[recordIndex] = {
-        ...updatedRecords[recordIndex],
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await this.updateVehicle(vehicleId, { maintenanceHistory: updatedRecords });
-      
-      // Vérifier s'il faut mettre à jour la date de dernière maintenance
-      if (updates.date) {
-        // Trouver la maintenance la plus récente
-        const sortedRecords = [...updatedRecords].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        
-        await this.updateVehicle(vehicleId, { lastMaintenanceDate: sortedRecords[0].date });
-      }
+      const docRef = doc(this.maintenanceCollection, recordId);
+      await updateDoc(docRef, {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Erreur lors de la mise à jour de l\'enregistrement de maintenance:', error);
       throw error;
@@ -619,26 +446,10 @@ class VehicleService {
   }
   
   // Supprimer un enregistrement de maintenance
-  async deleteMaintenanceRecord(vehicleId: string, recordId: string): Promise<void> {
+  async deleteMaintenanceRecord(recordId: string): Promise<void> {
     try {
-      const vehicle = await this.getVehicleById(vehicleId);
-      if (!vehicle) {
-        throw new Error('Véhicule non trouvé');
-      }
-      
-      // Filtrer l'enregistrement à supprimer
-      const updatedRecords = vehicle.maintenanceHistory.filter(rec => rec.id !== recordId);
-      
-      await this.updateVehicle(vehicleId, { maintenanceHistory: updatedRecords });
-      
-      // Mettre à jour la date de dernière maintenance si nécessaire
-      if (updatedRecords.length > 0) {
-        const sortedRecords = [...updatedRecords].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        
-        await this.updateVehicle(vehicleId, { lastMaintenanceDate: sortedRecords[0].date });
-      }
+      const docRef = doc(this.maintenanceCollection, recordId);
+      await deleteDoc(docRef);
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'enregistrement de maintenance:', error);
       throw error;
@@ -650,9 +461,26 @@ class VehicleService {
   // Mettre à jour les informations d'assurance
   async updateInsuranceInfo(vehicleId: string, insuranceInfo: InsuranceInfo): Promise<void> {
     try {
-      await this.updateVehicle(vehicleId, { insuranceInfo });
+      const docRef = doc(this.collection, vehicleId);
+      await updateDoc(docRef, {
+        insuranceInfo,
+        updatedAt: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Erreur lors de la mise à jour des informations d\'assurance:', error);
+      throw error;
+    }
+  }
+
+  async updateTechnicalSpecifications(vehicleId: string, specifications: TechnicalSpecifications): Promise<void> {
+    try {
+      const docRef = doc(this.collection, vehicleId);
+      await updateDoc(docRef, {
+        technicalSpecifications: specifications,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des spécifications techniques:', error);
       throw error;
     }
   }
