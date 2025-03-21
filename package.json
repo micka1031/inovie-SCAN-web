@@ -40,7 +40,7 @@
   "scripts": {
     "start": "vite",
     "dev": "vite --force",
-    "build": "vite build",
+    "build": "vite build && copy public\\favicon.ico dist\\ && copy public\\manifest.json dist\\ && copy public\\logo-inovie.png dist\\",
     "build-ignore-ts": "cross-env TSC_COMPILE_ON_ERROR=true vite build --force",
     "test": "vitest",
     "eject": "react-scripts eject"
