@@ -155,7 +155,13 @@ const SELASManagement: React.FC = () => {
           [pageKey]: value
         };
       } else {
-        updated[field as keyof SELAS] = value;
+        // Type-safe key check
+        const selasKeys = ['nom', 'description', 'code', 'active', 'sitesAutorises'] as const;
+        const typedField = field as typeof selasKeys[number];
+        
+        if (selasKeys.includes(typedField)) {
+          (updated as any)[typedField] = value;
+        }
       }
       
       return updated;
