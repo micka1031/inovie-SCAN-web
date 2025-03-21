@@ -609,7 +609,11 @@ const SELASManagement: React.FC = () => {
                   {utilisateurs.slice(0, 3).map(userId => {
                     const user = availableUsers.find(u => u.id === userId);
                     return (
-                      <Tag icon={<FaUser />} color="green" key={userId}>
+                      <Tag 
+                        icon={<FaUser style={{ marginRight: '5px' }} />} 
+                        color="green" 
+                        key={userId}
+                      >
                         {user ? user.nom || user.email : 'Utilisateur inconnu'}
                       </Tag>
                     );
