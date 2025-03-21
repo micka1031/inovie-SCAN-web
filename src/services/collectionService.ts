@@ -9,7 +9,7 @@ import {
   Query
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
-import { auth, db } from '../firebase';
+import { auth, db } from '../config/firebase';
 
 export class CollectionService {
   private userData: DocumentData | null = null;

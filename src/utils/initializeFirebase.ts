@@ -1,6 +1,6 @@
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
-import { auth } from '../firebase';
+import { auth } from '../config/firebase';
 import { FirebaseError } from 'firebase/app';
 
 // Fonction pour vérifier si une collection existe et contient des données
@@ -336,3 +336,4 @@ export const initializeFirebaseData = async () => {
   
   console.log('Initialisation des collections terminée.');
 };
+

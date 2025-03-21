@@ -1,5 +1,5 @@
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import React, { useState, useEffect } from 'react';
 
 export interface Pole {

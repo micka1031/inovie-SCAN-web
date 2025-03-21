@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import './PoleFilter.css';
 
 interface PoleFilterProps {

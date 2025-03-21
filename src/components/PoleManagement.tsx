@@ -35,7 +35,7 @@ import {
   Business as BusinessIcon
 } from '@mui/icons-material';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { useSnackbar } from 'notistack';
 import { SELAS } from '../types/SELAS';
 import { SELASService } from '../services/SELASService';

@@ -1,6 +1,6 @@
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, Timestamp, getDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db, storage } from '../config/firebase';
 import { VehicleInspection, InspectionItem, Photo, InspectionStatus } from '../types/Vehicle';
 
 export interface VehicleInspectionFilters {

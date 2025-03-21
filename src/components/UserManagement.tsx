@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, getDocs, updateDoc, deleteDoc, doc, getDoc, addDoc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
-import { db, auth, PRODUCTION_URL } from '../firebase';
+import { db, auth, PRODUCTION_URL } from '../config/firebase';
 import './UserManagement.css';
 import { createUserWithoutSignOut } from '../services/userService';
 import { RoleService } from '../services/RoleService';

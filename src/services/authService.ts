@@ -16,7 +16,7 @@ import {
   where, 
   getDocs 
 } from 'firebase/firestore';
-import { auth, db, PRODUCTION_URL } from '../firebase';
+import { auth, db, PRODUCTION_URL } from '../config/firebase';
 
 export const authService = {
   // Créer un utilisateur avec profil Firestore

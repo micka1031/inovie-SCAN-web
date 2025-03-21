@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, updateDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import './RoleManagement.css';
 import { RoleService } from '../services/RoleService';
 import { Role as RoleType } from '../types/roles';

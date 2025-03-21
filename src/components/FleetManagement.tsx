@@ -33,7 +33,7 @@ import {
   DirectionsCar as CarIcon
 } from '@mui/icons-material';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { useSnackbar } from 'notistack';
 import { Vehicule } from '../types/index';
 import PoleSelector from './PoleSelector';

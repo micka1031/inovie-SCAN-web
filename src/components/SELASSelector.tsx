@@ -3,7 +3,7 @@ import { Select, Spin, Button, Modal, message } from 'antd';
 import { useSelasContext } from '../contexts/SelasContext';
 import { getAuth } from 'firebase/auth';
 import { collection, getDocs, doc, updateDoc, writeBatch, query, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import './SELASSelector.css';
 
 const SelasSelector: React.FC = () => {

@@ -17,7 +17,7 @@ import {
   QueryDocumentSnapshot,
   DocumentData
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import DatePicker from 'react-datepicker';
 import { registerLocale } from 'react-datepicker';
 import { fr } from 'date-fns/locale';

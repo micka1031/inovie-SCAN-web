@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { auth, db, PRODUCTION_URL, ALLOWED_DOMAINS, domainConfig, actionCodeSettings } from '../firebase';
+import { auth, db, PRODUCTION_URL, ALLOWED_DOMAINS, actionCodeSettings } from '../config/firebase';
 import logoInovie from '../assets/logo-inovie.png';
 // import * as LogoIcons from '../assets/inovie-logo.js';
 import './LoginScreen.css';

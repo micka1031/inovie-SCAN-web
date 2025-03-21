@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { SELAS } from '../types/SELAS';
 import { SELASService } from '../services/SELASService';
 import { useAuth } from './AuthContext';

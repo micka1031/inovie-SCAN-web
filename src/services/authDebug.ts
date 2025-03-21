@@ -3,7 +3,7 @@ import {
   createUserWithEmailAndPassword,
   getAuth
 } from 'firebase/auth';
-import { auth } from '../firebase';
+import { auth } from '../config/firebase';
 
 export const authDebug = {
   async debugSignIn(email: string, password: string) {

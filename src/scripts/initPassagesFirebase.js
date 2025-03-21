@@ -1,5 +1,5 @@
 // Script pour initialiser la collection passages dans Firebase
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { collection, getDocs, addDoc, Timestamp, deleteDoc } from 'firebase/firestore';
 
 // Fonction pour convertir une chaîne de date et heure en Timestamp

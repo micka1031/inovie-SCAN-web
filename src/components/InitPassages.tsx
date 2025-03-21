@@ -94,3 +94,4 @@ const InitPassages: React.FC = () => {
 };
 
 export default InitPassages;
+

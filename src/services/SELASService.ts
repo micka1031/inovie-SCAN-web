@@ -1,5 +1,5 @@
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { getAuth } from 'firebase/auth';
 import { SELAS, SELASCreation, SELASStats } from '../types/SELAS';
 

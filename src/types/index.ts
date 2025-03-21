@@ -81,3 +81,4 @@ export interface MarkerPreference {
   icon: string;
   name: string;
 }
+

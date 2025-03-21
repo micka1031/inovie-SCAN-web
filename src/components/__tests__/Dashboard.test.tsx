@@ -7,3 +7,4 @@ describe('Dashboard', () => {
     expect(screen.getByText(/Tableau de bord/i)).toBeInTheDocument();
   });
 });
+

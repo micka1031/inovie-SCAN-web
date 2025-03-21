@@ -1,5 +1,5 @@
 import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { Role } from '../types/roles';
 import { PageName, PAGES } from '../utils/pageAccessUtils';
 

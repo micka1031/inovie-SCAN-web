@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { 
   collection, 
   getDocs, 

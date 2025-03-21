@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import logoInovieWhite from '../assets/logo-inovie-white.png';
 import './Navbar.css';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '../config/firebase';
 import { generateTempPassword } from '../services/userService';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { RoleService, canAccessPage, getRoleByName } from '../services/RoleService';

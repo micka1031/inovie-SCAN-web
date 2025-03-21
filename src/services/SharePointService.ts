@@ -1,4 +1,4 @@
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import { collection, getDocs, query, where, orderBy, limit, Timestamp, addDoc, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import JSZip from 'jszip';
 

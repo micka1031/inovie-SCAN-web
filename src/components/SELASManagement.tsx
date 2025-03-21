@@ -19,7 +19,7 @@ import { SELAS } from '../types/SELAS';
 import { SELASService } from '../services/SELASService';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { db } from '../firebase';
+import { db } from '../config/firebase';
 import './SELASManagement.css';
 import './DataTable.css';
 import './EditMode.css';
@@ -916,3 +916,4 @@ const SELASManagement: React.FC = () => {
 };
 
 export default SELASManagement; 
+
