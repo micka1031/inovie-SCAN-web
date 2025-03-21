@@ -610,7 +610,7 @@ const SELASManagement: React.FC = () => {
                     const user = availableUsers.find(u => u.id === userId);
                     return (
                       <Tag 
-                        icon={<FaUser style={{ marginRight: '5px' }} />} 
+                        icon={React.createElement(FaUser, { style: { marginRight: '5px' } })} 
                         color="green" 
                         key={userId}
                       >
