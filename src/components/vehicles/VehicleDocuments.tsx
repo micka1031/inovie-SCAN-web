@@ -114,16 +114,25 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
     }
   };
   
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    return new Date(dateString).toISOString().split('T')[0];
+  };
+
   const handleOpenDialog = (document?: VehicleDocument) => {
     if (document) {
       setSelectedDocument(document);
-      setFormData(document);
+      setFormData({
+        ...document,
+        issueDate: formatDateForInput(document.issueDate),
+        expiryDate: formatDateForInput(document.expiryDate),
+      });
     } else {
       setSelectedDocument(null);
       setFormData({
         title: '',
         type: 'insurance',
-        issueDate: new Date().toISOString().split('T')[0],
+        issueDate: formatDateForInput(new Date().toISOString()),
         expiryDate: '',
         notes: '',
       });
@@ -153,28 +162,98 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const uploadedDoc = await vehicleService.uploadDocument(vehicle.id, file);
-        setFormData(prev => ({
-          ...prev,
-          fileUrl: uploadedDoc.fileUrl,
-          fileName: file.name,
-          fileType: file.type,
-        }));
-      } catch (err: any) {
-        setError(err.message || 'Erreur lors du téléchargement du fichier');
-        console.error('Erreur:', err);
+    if (!file) {
+      setError('Aucun fichier sélectionné');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Vérifier l'authentification
+      const auth = getAuth();
+      if (!auth.currentUser) {
+        setError('Vous devez être connecté pour télécharger des fichiers');
+        return;
       }
+
+      // Vérifier que l'utilisateur a les permissions nécessaires
+      if (!hasPermission('documents.create')) {
+        setError('Vous n\'avez pas les permissions nécessaires pour télécharger des fichiers');
+        return;
+      }
+
+      // Vérifier la taille du fichier (5MB maximum)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        setError('Le fichier est trop volumineux. La taille maximale est de 5MB.');
+        return;
+      }
+
+      // Vérifier le type de fichier
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Type de fichier non autorisé. Seuls les fichiers JPG, PNG et PDF sont acceptés.');
+        return;
+      }
+
+      console.log('Debug - Début upload:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        vehicleId: vehicle.id,
+        userId: auth.currentUser.uid
+      });
+
+      const uploadedDoc = await vehicleService.uploadDocument(vehicle.id, file);
+      console.log('Debug - Document uploadé avec succès:', uploadedDoc);
+
+      setFormData(prev => ({
+        ...prev,
+        fileUrl: uploadedDoc.fileUrl,
+        fileName: file.name,
+        fileType: file.type,
+      }));
+
+      // Rafraîchir la liste des documents
+      await loadDocuments();
+      
+    } catch (err: any) {
+      console.error('Erreur détaillée lors du téléchargement:', err);
+      
+      if (err.code === 'storage/unauthorized') {
+        setError('Accès non autorisé. Veuillez vous reconnecter.');
+      } else if (err.code === 'storage/canceled') {
+        setError('Téléchargement annulé.');
+      } else if (err.code === 'storage/unknown') {
+        setError('Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
+      } else if (err.code === 'storage/quota-exceeded') {
+        setError('Quota de stockage dépassé. Contactez l\'administrateur.');
+      } else if (err.code === 'storage/invalid-checksum') {
+        setError('Le fichier est corrompu. Veuillez réessayer.');
+      } else if (err.code === 'storage/retry-limit-exceeded') {
+        setError('Le temps de téléchargement a expiré. Veuillez réessayer avec une meilleure connexion.');
+      } else {
+        setError(`Erreur: ${err.message || 'Une erreur inconnue s\'est produite'}`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
   
   const handleSubmit = async () => {
     try {
+      const submissionData = {
+        ...formData,
+        issueDate: new Date(formData.issueDate || '').toISOString(),
+        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : '',
+      };
+
       if (selectedDocument) {
-        await vehicleService.updateDocument(vehicle.id, selectedDocument.id, formData as VehicleDocument);
+        await vehicleService.updateDocument(vehicle.id, selectedDocument.id, submissionData as VehicleDocument);
       } else {
-        await vehicleService.addDocumentToVehicle(vehicle.id, formData as VehicleDocument);
+        await vehicleService.addDocumentToVehicle(vehicle.id, submissionData as VehicleDocument);
       }
       handleCloseDialog();
       loadDocuments();
@@ -252,6 +331,10 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
   };
   
   const getFileIcon = (fileType: string) => {
+    if (!fileType) {
+      return <DocIcon />;
+    }
+    
     if (fileType.includes('pdf')) {
       return <PdfIcon />;
     } else if (fileType.includes('image')) {

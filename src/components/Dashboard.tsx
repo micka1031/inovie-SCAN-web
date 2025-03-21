@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../config/firebase';
 import { collection, query, getDocs, Timestamp, where, orderBy, limit } from 'firebase/firestore';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement } from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement, LineElement, Filler } from 'chart.js';
 import { Pie, Bar, Line } from 'react-chartjs-2';
 import './Dashboard.css';
 
@@ -15,7 +15,8 @@ ChartJS.register(
   BarElement, 
   Title, 
   PointElement, 
-  LineElement
+  LineElement,
+  Filler
 );
 
 interface Passage {

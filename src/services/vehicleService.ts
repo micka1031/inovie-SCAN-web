@@ -430,31 +430,54 @@ class VehicleService {
   }
   
   // Uploader un document
-  async uploadDocument(vehicleId: string, file: File): Promise<{ fileUrl: string; thumbnailUrl?: string; fileName?: string; fileType?: string; }> {
+  async uploadDocument(vehicleId: string, file: File): Promise<{ fileUrl: string }> {
     try {
-      const timestamp = Date.now();
-      const fileName = `${vehicleId}/${timestamp}_${file.name}`;
-      const storageRef = ref(this.storage, `${this.storageBasePath}/${fileName}`);
-      
-      await uploadBytes(storageRef, file);
-      const fileUrl = await getDownloadURL(storageRef);
-      
-      // Pour les images, créer une miniature
-      let thumbnailUrl = undefined;
-      if (file.type.startsWith('image/')) {
-        // Pour l'instant, on utilise l'image originale comme miniature
-        thumbnailUrl = fileUrl;
+      const auth = getAuth();
+      if (!auth.currentUser) {
+        throw new Error('Utilisateur non authentifié');
       }
-      
-      return { 
-        fileUrl, 
-        thumbnailUrl,
-        fileName: file.name,
-        fileType: file.type
+
+      // Vérifier la taille du fichier
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('Le fichier est trop volumineux (max 5MB)');
+      }
+
+      // Vérifier le type de fichier
+      if (!file.type.match('image/.*|application/pdf')) {
+        throw new Error('Type de fichier non autorisé');
+      }
+
+      const timestamp = Date.now();
+      const fileName = `${timestamp}_${file.name}`;
+      const filePath = `${this.storageBasePath}/${vehicleId}/${fileName}`;
+      const storageRef = ref(this.storage, filePath);
+
+      // Upload avec metadata
+      const metadata = {
+        contentType: file.type,
+        customMetadata: {
+          'vehicleId': vehicleId,
+          'uploadedBy': auth.currentUser.uid,
+          'originalName': file.name
+        }
       };
-    } catch (error) {
-      console.error('Erreur lors de l\'upload du document:', error);
-      throw error;
+
+      await uploadBytes(storageRef, file, metadata);
+      const downloadUrl = await getDownloadURL(storageRef);
+
+      return { fileUrl: downloadUrl };
+    } catch (error: any) {
+      console.error('Erreur lors du téléchargement:', error);
+      
+      if (error.code === 'storage/unauthorized') {
+        throw new Error('Accès non autorisé au stockage');
+      } else if (error.code === 'storage/canceled') {
+        throw new Error('Téléchargement annulé');
+      } else if (error.code === 'storage/unknown') {
+        throw new Error('Erreur inconnue lors du téléchargement');
+      } else {
+        throw new Error(error.message || 'Erreur lors du téléchargement du fichier');
+      }
     }
   }
 
