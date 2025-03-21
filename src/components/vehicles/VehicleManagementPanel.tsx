@@ -233,32 +233,14 @@ const VehicleManagementPanel: React.FC = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">Gestion des véhicules</Typography>
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenDialog}
-            sx={{ mr: 1 }}
-          >
-            Nouveau véhicule
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleInitializeVehicles}
-            sx={{ mx: 1 }}
-          >
-            Initialiser les véhicules
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleResetVehicles}
-          >
-            Réinitialiser tous les véhicules
-          </Button>
-        </Box>
+        <Typography variant="h6">Gestion des véhicules</Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+        >
+          Ajouter un véhicule
+        </Button>
       </Box>
 
       {error && (
@@ -266,6 +248,27 @@ const VehicleManagementPanel: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      {/* Suppression des boutons d'initialisation et de réinitialisation */}
+      {/* <Box sx={{ display: 'flex', mb: 2 }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={handleInitializeVehicles}
+          sx={{ mr: 1 }}
+          disabled={loading}
+        >
+          Initialiser les véhicules
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          onClick={handleResetVehicles}
+          disabled={loading}
+        >
+          Réinitialiser les véhicules
+        </Button>
+      </Box> */}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>

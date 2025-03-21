@@ -17,7 +17,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import AdminPanel from './components/AdminPanel';
 import VehicleManagement from './pages/VehicleManagement';
-import DebugPermissions from './components/vehicles/DebugPermissions';
 import './App.css';
 import { SnackbarProvider } from 'notistack';
 import LoadingScreen from './components/LoadingScreen';
@@ -272,20 +271,6 @@ const createAppRouter = (isAuthenticated: boolean, userRole: string, currentUser
               roles={roles}
             >
               <VehicleManagement />
-            </ProtectedRoute>
-          )
-        },
-        {
-          path: 'debug-permissions',
-          element: (
-            <ProtectedRoute 
-              userRole={userRole} 
-              allowedRoles={['Administrateur', 'Utilisateur']}
-              requiredPermissions={[]}
-              pageName={PAGES.VEHICULES}
-              roles={roles}
-            >
-              <DebugPermissions />
             </ProtectedRoute>
           )
         },

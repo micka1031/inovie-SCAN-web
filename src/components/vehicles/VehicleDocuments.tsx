@@ -54,7 +54,7 @@ interface VehicleDocumentsProps {
 }
 
 const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
-  const { currentUser, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
   const [documents, setDocuments] = useState<VehicleDocument[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,45 +69,20 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
   });
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    console.log('Debug - Auth Context - Utilisateur:', currentUser);
-    console.log('Debug - Permission Vehicules:', hasPermission('vehicules.view'));
-    console.log('Debug - Permission Documents:', hasPermission('documents.view'));
-    
     loadDocuments();
-  }, [vehicle.id, currentUser]);
+  }, [vehicle.id]);
   
   const loadDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      try {
-        // Essayer d'abord la méthode principale
-        const docs = await vehicleService.getDocuments(vehicle.id);
-        setDocuments(docs);
-        console.log('Documents chargés avec succès via la méthode principale:', docs.length);
-        return;
-      } catch (err) {
-        console.warn('Erreur avec la méthode principale, tentative avec la méthode alternative:', err);
-        
-        // Si la méthode principale échoue, essayer la méthode alternative
-        try {
-          const docsAlt = await vehicleService.getVehicleDocumentsAlternative(vehicle.id);
-          setDocuments(docsAlt);
-          console.log('Documents chargés avec succès via la méthode alternative:', docsAlt.length);
-          return;
-        } catch (altErr) {
-          console.error('Échec de la méthode alternative aussi:', altErr);
-          throw altErr;
-        }
-      }
+      const docs = await vehicleService.getDocuments(vehicle.id);
+      setDocuments(docs);
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des documents');
-      console.error('Erreur finale:', err);
-      
-      // Si tout échoue, initialiser avec un tableau vide
       setDocuments([]);
     } finally {
       setLoading(false);
@@ -161,8 +136,8 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
   };
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
+    const files = e.target.files;
+    if (!files || files.length === 0) {
       setError('Aucun fichier sélectionné');
       return;
     }
@@ -171,74 +146,51 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
       setLoading(true);
       setError(null);
       
-      // Vérifier l'authentification
       const auth = getAuth();
       if (!auth.currentUser) {
         setError('Vous devez être connecté pour télécharger des fichiers');
         return;
       }
 
-      // Vérifier que l'utilisateur a les permissions nécessaires
       if (!hasPermission('documents.create')) {
         setError('Vous n\'avez pas les permissions nécessaires pour télécharger des fichiers');
         return;
       }
 
-      // Vérifier la taille du fichier (5MB maximum)
-      const maxSize = 5 * 1024 * 1024; // 5MB
-      if (file.size > maxSize) {
-        setError('Le fichier est trop volumineux. La taille maximale est de 5MB.');
-        return;
+      // Traitement de chaque fichier
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Vérifications
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+          setError(`Le fichier ${file.name} est trop volumineux. La taille maximale est de 5MB.`);
+          continue;
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+          setError(`Type de fichier non autorisé pour ${file.name}. Seuls les fichiers JPG, PNG et PDF sont acceptés.`);
+          continue;
+        }
+
+        try {
+          await vehicleService.uploadDocument(vehicle.id, file);
+        } catch (uploadErr: any) {
+          setError(`Erreur lors de l'upload de ${file.name}: ${uploadErr.message}`);
+        }
       }
 
-      // Vérifier le type de fichier
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-      if (!allowedTypes.includes(file.type)) {
-        setError('Type de fichier non autorisé. Seuls les fichiers JPG, PNG et PDF sont acceptés.');
-        return;
-      }
-
-      console.log('Debug - Début upload:', {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        vehicleId: vehicle.id,
-        userId: auth.currentUser.uid
-      });
-
-      const uploadedDoc = await vehicleService.uploadDocument(vehicle.id, file);
-      console.log('Debug - Document uploadé avec succès:', uploadedDoc);
-
-      setFormData(prev => ({
-        ...prev,
-        fileUrl: uploadedDoc.fileUrl,
-        fileName: file.name,
-        fileType: file.type,
-      }));
-
-      // Rafraîchir la liste des documents
+      // Rafraîchir la liste après tous les uploads
       await loadDocuments();
       
     } catch (err: any) {
-      console.error('Erreur détaillée lors du téléchargement:', err);
-      
-      if (err.code === 'storage/unauthorized') {
-        setError('Accès non autorisé. Veuillez vous reconnecter.');
-      } else if (err.code === 'storage/canceled') {
-        setError('Téléchargement annulé.');
-      } else if (err.code === 'storage/unknown') {
-        setError('Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
-      } else if (err.code === 'storage/quota-exceeded') {
-        setError('Quota de stockage dépassé. Contactez l\'administrateur.');
-      } else if (err.code === 'storage/invalid-checksum') {
-        setError('Le fichier est corrompu. Veuillez réessayer.');
-      } else if (err.code === 'storage/retry-limit-exceeded') {
-        setError('Le temps de téléchargement a expiré. Veuillez réessayer avec une meilleure connexion.');
-      } else {
-        setError(`Erreur: ${err.message || 'Une erreur inconnue s\'est produite'}`);
-      }
+      setError(`Erreur: ${err.message || 'Une erreur inconnue s\'est produite'}`);
     } finally {
       setLoading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
   
@@ -344,100 +296,26 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
     }
   };
   
-  const handleCreateTestDocument = async () => {
-    try {
-      const auth = getAuth();
-      const currentUser = auth.currentUser;
-      console.log('Debug - Test Document - Utilisateur:', currentUser?.uid, currentUser?.email);
-      
-      const testDoc: Omit<VehicleDocument, 'id'> = {
-        vehicleId: vehicle.id,
-        title: 'Document de test',
-        type: 'test',
-        fileUrl: 'https://example.com/test.pdf',
-        issueDate: new Date().toISOString(),
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'valid',
-        notes: 'Document créé pour tester les permissions',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      const docId = await vehicleService.addDocumentToVehicle(vehicle.id, testDoc);
-      console.log('Document de test créé avec ID:', docId);
-      
-      loadDocuments();
-    } catch (err) {
-      console.error('Erreur lors de la création du document de test:', err);
-      setError(`Erreur de test: ${err.message}`);
-    }
-  };
-  
-  const handleCreateEmbeddedDocument = async () => {
-    try {
-      // Vérifier si le véhicule existe
-      const vehicleData = await vehicleService.getVehicleById(vehicle.id);
-      if (!vehicleData) {
-        throw new Error("Véhicule non trouvé");
-      }
-      
-      // Créer un document de test intégré
-      const newDoc = {
-        id: `embedded-${Date.now()}`,
-        title: 'Document intégré',
-        type: 'test',
-        fileUrl: 'https://example.com/test-embedded.pdf',
-        issueDate: new Date().toISOString(),
-        expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'valid',
-        notes: 'Document intégré pour contourner les permissions',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      // Ajouter le document à la liste des documents du véhicule
-      const updatedDocs = [...(vehicleData.documents || []), newDoc];
-      
-      // Mettre à jour le véhicule avec le nouveau document
-      await vehicleService.updateVehicle(vehicle.id, {
-        documents: updatedDocs,
-        updatedAt: new Date().toISOString()
-      });
-      
-      console.log('Document intégré créé');
-      loadDocuments();
-    } catch (err) {
-      console.error('Erreur lors de la création du document intégré:', err);
-      setError(`Erreur: ${err.message}`);
-    }
-  };
-  
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">Documents du véhicule</Typography>
         <Box>
+          <input
+            type="file"
+            multiple
+            accept="image/*,application/pdf"
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+            ref={fileInputRef}
+          />
           <Button
             variant="contained"
-            onClick={() => handleOpenDialog()}
             startIcon={<AddIcon />}
-            sx={{ mr: 1 }}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading || !hasPermission('documents.create')}
           >
-            Ajouter un document
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleCreateTestDocument}
-          >
-            Test Permissions
-          </Button>
-          <Button
-            variant="outlined"
-            color="secondary"
-            onClick={handleCreateEmbeddedDocument}
-          >
-            Créer un document intégré
+            Ajouter des documents
           </Button>
         </Box>
       </Box>
@@ -456,7 +334,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
       
       {documents.length === 0 ? (
         <Alert severity="info">
-          Aucun document pour ce véhicule. Utilisez le bouton "Nouveau document" pour ajouter un document.
+          Aucun document pour ce véhicule. Utilisez le bouton "Ajouter des documents" pour ajouter un document.
         </Alert>
       ) : (
         <TableContainer component={Paper} variant="outlined">
@@ -478,7 +356,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
                     <Stack direction="row" spacing={1} alignItems="center">
                       {getFileIcon(document.fileType)}
                       <Typography variant="body2">
-                        {document.title}
+                        {document.title || document.fileName}
                       </Typography>
                     </Stack>
                   </TableCell>
@@ -490,7 +368,7 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
                       </Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell>{new Date(document.issueDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{document.issueDate ? new Date(document.issueDate).toLocaleDateString() : '-'}</TableCell>
                   <TableCell>
                     {document.expiryDate ? new Date(document.expiryDate).toLocaleDateString() : '-'}
                   </TableCell>
@@ -520,21 +398,25 @@ const VehicleDocuments: React.FC<VehicleDocumentsProps> = ({ vehicle }) => {
                     >
                       <DownloadIcon fontSize="small" />
                     </IconButton>
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleOpenDialog(document)}
-                      title="Éditer"
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton 
-                      size="small"
-                      onClick={() => handleDelete(document.id)}
-                      title="Supprimer"
-                      color="error"
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    {hasPermission('documents.update') && (
+                      <IconButton 
+                        size="small"
+                        onClick={() => handleOpenDialog(document)}
+                        title="Éditer"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    )}
+                    {hasPermission('documents.delete') && (
+                      <IconButton 
+                        size="small"
+                        onClick={() => handleDelete(document.id)}
+                        title="Supprimer"
+                        color="error"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

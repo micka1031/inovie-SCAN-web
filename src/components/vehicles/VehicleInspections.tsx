@@ -347,32 +347,12 @@ const VehicleInspections: React.FC<VehicleInspectionsProps> = ({ vehicle }) => {
           >
             Créer une inspection de test
           </Button>
-          {currentUser?.role === 'Administrateur' && (
-            <Button
-              variant="outlined"
-              color="info"
-              onClick={() => navigate('/debug-permissions')}
-              size="small"
-            >
-              Déboguer permissions
-            </Button>
-          )}
         </Box>
       </Box>
       
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-          {currentUser?.role === 'Administrateur' && (
-            <Button 
-              size="small" 
-              color="inherit" 
-              onClick={() => navigate('/debug-permissions')}
-              sx={{ ml: 2 }}
-            >
-              Analyser le problème
-            </Button>
-          )}
         </Alert>
       )}
       
