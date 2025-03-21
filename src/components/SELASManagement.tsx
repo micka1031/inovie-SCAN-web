@@ -609,13 +609,22 @@ const SELASManagement: React.FC = () => {
                   {utilisateurs.slice(0, 3).map(userId => {
                     const user = availableUsers.find(u => u.id === userId);
                     return (
-                      <Tag 
-                        icon={<span><FaUser style={{ marginRight: '5px', verticalAlign: 'middle' }} /></span>} 
-                        color="green" 
+                      <div
                         key={userId}
+                        style={{
+                          backgroundColor: '#52c41a',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          margin: '2px 0',
+                          fontSize: '12px'
+                        }}
                       >
+                        <FaUser style={{ marginRight: '5px' }} />
                         {user ? user.nom || user.email : 'Utilisateur inconnu'}
-                      </Tag>
+                      </div>
                     );
                   })}
                   {utilisateurs.length > 3 && (
@@ -623,7 +632,17 @@ const SELASManagement: React.FC = () => {
                       const user = availableUsers.find(u => u.id === userId);
                       return user ? user.nom || user.email : 'Utilisateur inconnu';
                     }).join(', ')}>
-                      <Tag color="blue">{`+${utilisateurs.length - 3} autres`}</Tag>
+                      <div style={{
+                        backgroundColor: '#1890ff',
+                        color: 'white',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        margin: '2px 0',
+                        fontSize: '12px',
+                        cursor: 'pointer'
+                      }}>
+                        {`+${utilisateurs.length - 3} autres`}
+                      </div>
                     </Tooltip>
                   )}
                 </div>
