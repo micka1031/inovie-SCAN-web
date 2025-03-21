@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Vehicle, MaintenanceRecord } from '../../types/Vehicle';
-import { vehicleService } from '../../services/vehicleService';
+import vehicleService from '../../services/vehicleService';
 import {
   Box,
   Button,

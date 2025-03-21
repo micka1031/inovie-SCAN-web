@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, updateDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import './RoleManagement.css';
 import { RoleService } from '../services/RoleService';
@@ -127,21 +127,29 @@ const RoleManagement: React.FC = () => {
   const roleService = RoleService.getInstance();
 
   useEffect(() => {
-    fetchRoles();
+    loadRoles();
   }, []);
 
-  const fetchRoles = async () => {
+  const loadRoles = async () => {
     try {
       setLoading(true);
-      const roles = await roleService.getRoles();
+      setError(null);
+      console.log("Chargement des rôles...");
       
-      if (roles.length === 0) {
-        // Si aucun rôle n'existe, initialiser avec les rôles par défaut
+      // Récupérer les rôles existants
+      const existingRoles = await roleService.getRoles();
+      console.log("Rôles existants:", existingRoles);
+      
+      if (existingRoles.length === 0) {
+        console.log("Aucun rôle trouvé, initialisation des rôles par défaut...");
         await initializeDefaultRoles();
-        return;
+        // Recharger les rôles après l'initialisation
+        const updatedRoles = await roleService.getRoles();
+        setRoles(updatedRoles);
+      } else {
+        console.log("Rôles chargés avec succès:", existingRoles);
+        setRoles(existingRoles);
       }
-
-      setRoles(roles);
     } catch (err) {
       console.error('Erreur lors du chargement des rôles:', err);
       setError('Erreur lors du chargement des rôles');
@@ -152,16 +160,28 @@ const RoleManagement: React.FC = () => {
 
   const initializeDefaultRoles = async () => {
     try {
-      const batch = [];
+      console.log("Démarrage de l'initialisation des rôles par défaut...");
+      
       for (const role of DEFAULT_ROLES) {
-        const roleRef = doc(db, 'roles', role.id);
-        batch.push(setDoc(roleRef, role));
+        try {
+          // Vérifier d'abord si le rôle existe déjà
+          const roleRef = doc(db, 'roles', role.id);
+          const roleDoc = await getDoc(roleRef);
+          
+          if (!roleDoc.exists()) {
+            console.log(`Création du rôle ${role.name}...`);
+            await setDoc(roleRef, role);
+            console.log(`Rôle ${role.name} créé avec succès.`);
+          } else {
+            console.log(`Le rôle ${role.name} existe déjà.`);
+          }
+        } catch (roleError) {
+          console.error(`Erreur lors de la création du rôle ${role.name}:`, roleError);
+        }
       }
-      await Promise.all(batch);
-      await fetchRoles();
     } catch (err) {
       console.error('Erreur lors de l\'initialisation des rôles par défaut:', err);
-      setError('Erreur lors de l\'initialisation des rôles par défaut');
+      throw err;
     }
   };
 
@@ -212,7 +232,7 @@ const RoleManagement: React.FC = () => {
       setError(`Erreur lors de la mise à jour de la permission : ${err.message}`);
       
       // En cas d'erreur, restaurer l'état précédent
-      await fetchRoles();
+      await loadRoles();
     }
   };
 

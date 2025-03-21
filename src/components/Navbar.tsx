@@ -352,7 +352,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         
         {pageAccess.vehicules && (
           <>
-            <Link to="/vehicles" className={`nav-item ${location.pathname === '/vehicles' ? 'active' : ''}`}>
+            <Link to="/vehicules" className={`nav-item ${location.pathname === '/vehicules' || location.pathname === '/vehicles' ? 'active' : ''}`}>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2"></path>
                 <circle cx="7" cy="17" r="2"></circle>
@@ -392,6 +392,15 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
             </svg>
             Administration
+          </Link>
+        )}
+        
+        {userRole === 'Administrateur' && (
+          <Link to="/debug-permissions" className={`nav-item ${location.pathname === '/debug-permissions' ? 'active' : ''}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Debug Permissions
           </Link>
         )}
       </nav>

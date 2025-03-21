@@ -253,14 +253,14 @@ const VehicleDetailsPanel: React.FC<VehicleDetailsPanelProps> = ({ vehicle, onCl
                   <Grid container spacing={2}>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Statut</Typography>
-                      <Typography variant="body1">
+                      <Box>
                         <Chip 
                           icon={getStatusIcon(vehicle.status)}
                           label={vehicle.status} 
                           color={getStatusColor(vehicle.status) as any} 
                           size="small"
                         />
-                      </Typography>
+                      </Box>
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Kilométrage</Typography>

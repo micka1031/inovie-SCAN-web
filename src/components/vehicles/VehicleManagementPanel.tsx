@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Vehicle } from '../../types/Vehicle';
 import vehicleService from '../../services/vehicleService';
-import initVehicules from '../../scripts/initVehicules';
+import initVehicules, { resetVehicules } from '../../scripts/initVehicules';
 import {
   Box,
   Tabs,
@@ -124,6 +124,23 @@ const VehicleManagementPanel: React.FC = () => {
     }
   };
 
+  const handleResetVehicles = async () => {
+    if (window.confirm('ATTENTION: Cette action va supprimer TOUS les véhicules existants et les remplacer par les données par défaut. Voulez-vous continuer?')) {
+      try {
+        setLoading(true);
+        setError(null);
+        const deletedCount = await resetVehicules();
+        await loadVehicles();
+        alert(`Réinitialisation terminée! ${deletedCount} véhicules ont été supprimés et remplacés par les véhicules par défaut.`);
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors de la réinitialisation des véhicules');
+        console.error('Erreur de réinitialisation:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -167,6 +184,11 @@ const VehicleManagementPanel: React.FC = () => {
       setLoading(true);
       setError(null);
       if (newVehicle.id) {
+        // Vérifier d'abord si le document existe
+        const vehicleExists = await vehicleService.getVehicleById(newVehicle.id);
+        if (!vehicleExists) {
+          throw new Error(`Le véhicule avec l'ID ${newVehicle.id} n'existe pas.`);
+        }
         await vehicleService.updateVehicle(newVehicle.id, newVehicle);
       } else {
         await vehicleService.createVehicle(newVehicle as Vehicle);
@@ -197,6 +219,17 @@ const VehicleManagementPanel: React.FC = () => {
     }
   };
 
+  const handleEditVehicle = (vehicle: Vehicle) => {
+    if (!vehicle.id) {
+      setError("Impossible de modifier ce véhicule : ID manquant");
+      return;
+    }
+
+    const vehicleCopy = JSON.parse(JSON.stringify(vehicle));
+    setNewVehicle(vehicleCopy);
+    setOpenDialog(true);
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -214,9 +247,16 @@ const VehicleManagementPanel: React.FC = () => {
             variant="outlined"
             color="secondary"
             onClick={handleInitializeVehicles}
-            sx={{ ml: 1 }}
+            sx={{ mx: 1 }}
           >
             Initialiser les véhicules
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={handleResetVehicles}
+          >
+            Réinitialiser tous les véhicules
           </Button>
         </Box>
       </Box>
@@ -266,8 +306,7 @@ const VehicleManagementPanel: React.FC = () => {
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setNewVehicle(vehicle);
-                              setOpenDialog(true);
+                              handleEditVehicle(vehicle);
                             }}
                           >
                             <EditIcon />
@@ -314,10 +353,7 @@ const VehicleManagementPanel: React.FC = () => {
                   <VehicleDetailsPanel 
                     vehicle={selectedVehicle} 
                     onClose={() => setTabValue(0)} 
-                    onEdit={() => {
-                      setNewVehicle(selectedVehicle);
-                      setOpenDialog(true);
-                    }} 
+                    onEdit={() => handleEditVehicle(selectedVehicle)}
                   />
                 </TabPanel>
                 <TabPanel value={tabValue} index={1}>
@@ -382,7 +418,7 @@ const VehicleManagementPanel: React.FC = () => {
                 fullWidth
                 select
                 label="Type"
-                value={newVehicle.type}
+                value={newVehicle.type || 'car'}
                 onChange={(e) => handleInputChange('type', e.target.value)}
               >
                 <MenuItem value="car">Voiture</MenuItem>
@@ -396,7 +432,7 @@ const VehicleManagementPanel: React.FC = () => {
                 fullWidth
                 select
                 label="Statut"
-                value={newVehicle.status}
+                value={newVehicle.status || 'active'}
                 onChange={(e) => handleInputChange('status', e.target.value)}
               >
                 <MenuItem value="active">Actif</MenuItem>
@@ -431,7 +467,7 @@ const VehicleManagementPanel: React.FC = () => {
                 fullWidth
                 select
                 label="Type de carburant"
-                value={newVehicle.fuelType}
+                value={newVehicle.fuelType || 'gasoline'}
                 onChange={(e) => handleInputChange('fuelType', e.target.value)}
               >
                 <MenuItem value="gasoline">Essence</MenuItem>

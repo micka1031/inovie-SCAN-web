@@ -2,7 +2,8 @@ export type VehicleType = 'car' | 'van' | 'truck' | 'motorcycle' | 'bicycle';
 export type VehicleStatus = 'active' | 'maintenance' | 'inactive' | 'sold';
 export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'lpg';
 export type DocumentStatus = 'valid' | 'expired' | 'pending';
-export type InspectionStatus = 'passed' | 'failed' | 'pending';
+export type InspectionStatus = 'passed' | 'passed_with_warnings' | 'failed' | 'incomplete' | 'pending';
+export type InspectionItemStatus = 'ok' | 'attention' | 'critical' | 'not_applicable';
 export type MaintenanceType = 'routine' | 'repair' | 'inspection' | 'other';
 
 export interface Document {
@@ -19,19 +20,38 @@ export interface Document {
   updatedAt: string;
 }
 
+export interface VehicleDocument extends Document {
+  vehicleId: string;
+  fileType?: string;
+  fileSize?: number;
+  fileName?: string;
+}
+
 export interface Photo {
   id: string;
   url: string;
   thumbnailUrl?: string;
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
   description?: string;
-  takenAt: string;
+  takenAt?: string;
+  createdAt: string;
+  metadata?: {
+    width: number | null;
+    height: number | null;
+    location: string | null;
+  };
 }
 
 export interface InspectionItem {
   id: string;
   name: string;
-  status: InspectionStatus;
+  category: string;
+  status: InspectionItemStatus;
   notes?: string;
+  photos: Photo[];
+  comments?: string;
 }
 
 export interface Inspection {
@@ -185,4 +205,23 @@ export interface VehicleFilters {
   maintenanceNeeded?: boolean;
   inspectionNeeded?: boolean;
   insuranceExpiring?: boolean;
+}
+
+export interface VehicleInspection {
+  id: string;
+  vehicleId: string;
+  date: string;
+  inspectorName: string;
+  inspectorId?: string;
+  odometer: number;
+  status: InspectionStatus;
+  generalComments?: string;
+  inspectionItems: InspectionItem[];
+  actionRequired: boolean;
+  actionDescription?: string;
+  actionDueDate?: string;
+  actionCompletedDate?: string;
+  actionCompletedBy?: string;
+  createdAt: string;
+  updatedAt: string;
 } 

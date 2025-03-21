@@ -47,7 +47,13 @@ export function hasPageAccess(user: User | null, page: PageName, roles: Role[]):
   const userRole = roles.find(role => role.name === user.role);
   if (!userRole) return false;
 
-  const pageAccess = userRole.pageAccess as PageAccess;
+  // Si l'utilisateur est admin, accorder l'accès à toutes les pages
+  if (userRole.isAdmin === true) return true;
+
+  // Vérifier que pageAccess existe avant d'y accéder
+  const pageAccess = userRole.pageAccess as PageAccess | undefined;
+  if (!pageAccess) return false;
+  
   return !!pageAccess[page];
 }
 

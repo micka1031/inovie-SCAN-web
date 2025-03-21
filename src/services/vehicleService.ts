@@ -3,6 +3,7 @@ import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, g
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db } from '../config/firebase';
 import { getStorage } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 
 class VehicleService {
   private collection = collection(db, 'vehicules');
@@ -347,40 +348,80 @@ class VehicleService {
 
   // ===== Gestion des documents =====
   
-  // Ajouter un document à un véhicule
-  async addDocumentToVehicle(vehicleId: string, document: Omit<VehicleDocument, 'id' | 'createdAt' | 'updatedAt'>): Promise<VehicleDocument> {
+  // Récupérer tous les documents d'un véhicule
+  async getDocuments(vehicleId: string): Promise<VehicleDocument[]> {
     try {
-      const docRef = await addDoc(this.documentsCollection, {
-        ...document,
-        vehicleId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-      return { id: docRef.id, ...document };
+      // Ajouter du débogage pour l'authentification
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      console.log('Debug - Utilisateur actuel:', currentUser?.uid, currentUser?.email);
+      
+      const q = query(
+        this.documentsCollection, 
+        where('vehicleId', '==', vehicleId)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as VehicleDocument));
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du document au véhicule:', error);
+      console.error('Erreur lors de la récupération des documents:', error);
       throw error;
     }
   }
-  
+
+  // Ajouter un document à un véhicule
+  async addDocumentToVehicle(vehicleId: string, document: Omit<VehicleDocument, 'id'>): Promise<string> {
+    try {
+      // S'assurer que le document est lié au véhicule
+      const documentData = {
+        ...document,
+        vehicleId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const docRef = await addDoc(this.documentsCollection, documentData);
+      return docRef.id;
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du document:', error);
+      throw error;
+    }
+  }
+
   // Mettre à jour un document
-  async updateDocument(documentId: string, data: Partial<VehicleDocument>): Promise<void> {
+  async updateDocument(vehicleId: string, documentId: string, document: Partial<VehicleDocument>): Promise<void> {
     try {
       const docRef = doc(this.documentsCollection, documentId);
+      
+      // S'assurer que le document appartient bien au véhicule
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists() || snapshot.data().vehicleId !== vehicleId) {
+        throw new Error('Document non trouvé ou n\'appartenant pas à ce véhicule');
+      }
+      
       await updateDoc(docRef, {
-        ...data,
-        updatedAt: new Date().toISOString(),
+        ...document,
+        updatedAt: new Date().toISOString()
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour du document:', error);
       throw error;
     }
   }
-  
+
   // Supprimer un document
-  async deleteDocument(documentId: string): Promise<void> {
+  async deleteDocument(vehicleId: string, documentId: string): Promise<void> {
     try {
       const docRef = doc(this.documentsCollection, documentId);
+      
+      // S'assurer que le document appartient bien au véhicule
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists() || snapshot.data().vehicleId !== vehicleId) {
+        throw new Error('Document non trouvé ou n\'appartenant pas à ce véhicule');
+      }
+      
       await deleteDoc(docRef);
     } catch (error) {
       console.error('Erreur lors de la suppression du document:', error);
@@ -389,24 +430,28 @@ class VehicleService {
   }
   
   // Uploader un document
-  async uploadDocument(vehicleId: string, file: File): Promise<{ url: string; thumbnailUrl: string }> {
+  async uploadDocument(vehicleId: string, file: File): Promise<{ fileUrl: string; thumbnailUrl?: string; fileName?: string; fileType?: string; }> {
     try {
       const timestamp = Date.now();
       const fileName = `${vehicleId}/${timestamp}_${file.name}`;
       const storageRef = ref(this.storage, `${this.storageBasePath}/${fileName}`);
       
       await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      const fileUrl = await getDownloadURL(storageRef);
       
       // Pour les images, créer une miniature
-      let thumbnailUrl = url;
+      let thumbnailUrl = undefined;
       if (file.type.startsWith('image/')) {
-        const thumbnailRef = ref(this.storage, `${this.storageBasePath}/${vehicleId}/${timestamp}_thumb_${file.name}`);
-        // TODO: Implémenter la création de miniature
-        thumbnailUrl = url;
+        // Pour l'instant, on utilise l'image originale comme miniature
+        thumbnailUrl = fileUrl;
       }
       
-      return { url, thumbnailUrl };
+      return { 
+        fileUrl, 
+        thumbnailUrl,
+        fileName: file.name,
+        fileType: file.type
+      };
     } catch (error) {
       console.error('Erreur lors de l\'upload du document:', error);
       throw error;
@@ -414,6 +459,24 @@ class VehicleService {
   }
 
   // ===== Gestion de la maintenance =====
+  
+  // Récupérer tous les enregistrements de maintenance d'un véhicule
+  async getMaintenanceRecords(vehicleId: string): Promise<MaintenanceRecord[]> {
+    try {
+      const q = query(
+        this.maintenanceCollection, 
+        where('vehicleId', '==', vehicleId)
+      );
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        ...doc.data() 
+      } as MaintenanceRecord));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des enregistrements de maintenance:', error);
+      throw error;
+    }
+  }
   
   // Ajouter un enregistrement de maintenance
   async addMaintenanceRecord(vehicleId: string, record: Omit<MaintenanceRecord, 'id'>): Promise<MaintenanceRecord> {
@@ -432,9 +495,16 @@ class VehicleService {
   }
   
   // Mettre à jour un enregistrement de maintenance
-  async updateMaintenanceRecord(recordId: string, data: Partial<MaintenanceRecord>): Promise<void> {
+  async updateMaintenanceRecord(vehicleId: string, recordId: string, data: Partial<MaintenanceRecord>): Promise<void> {
     try {
       const docRef = doc(this.maintenanceCollection, recordId);
+      
+      // S'assurer que l'enregistrement appartient bien au véhicule
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists() || snapshot.data().vehicleId !== vehicleId) {
+        throw new Error('Enregistrement non trouvé ou n\'appartenant pas à ce véhicule');
+      }
+      
       await updateDoc(docRef, {
         ...data,
         updatedAt: new Date().toISOString(),
@@ -446,9 +516,16 @@ class VehicleService {
   }
   
   // Supprimer un enregistrement de maintenance
-  async deleteMaintenanceRecord(recordId: string): Promise<void> {
+  async deleteMaintenanceRecord(vehicleId: string, recordId: string): Promise<void> {
     try {
       const docRef = doc(this.maintenanceCollection, recordId);
+      
+      // S'assurer que l'enregistrement appartient bien au véhicule
+      const snapshot = await getDoc(docRef);
+      if (!snapshot.exists() || snapshot.data().vehicleId !== vehicleId) {
+        throw new Error('Enregistrement non trouvé ou n\'appartenant pas à ce véhicule');
+      }
+      
       await deleteDoc(docRef);
     } catch (error) {
       console.error('Erreur lors de la suppression de l\'enregistrement de maintenance:', error);
@@ -481,6 +558,26 @@ class VehicleService {
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour des spécifications techniques:', error);
+      throw error;
+    }
+  }
+
+  // Méthode alternative pour récupérer les documents d'un véhicule
+  async getVehicleDocumentsAlternative(vehicleId: string): Promise<VehicleDocument[]> {
+    try {
+      // Récupérer le véhicule complet
+      const vehicle = await this.getVehicleById(vehicleId);
+      
+      if (!vehicle) {
+        throw new Error("Véhicule non trouvé");
+      }
+      
+      console.log('Debug - Documents du véhicule:', vehicle.documents);
+      
+      // Retourner les documents du véhicule s'ils existent, sinon tableau vide
+      return vehicle.documents || [];
+    } catch (error) {
+      console.error('Erreur lors de la récupération alternative des documents:', error);
       throw error;
     }
   }
