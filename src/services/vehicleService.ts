@@ -448,8 +448,17 @@ class VehicleService {
       }
 
       const timestamp = Date.now();
-      const fileName = `${timestamp}_${file.name}`;
+      // Nettoyer le nom du fichier en remplaçant les espaces et caractères spéciaux
+      const cleanFileName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+      const fileName = `${timestamp}_${cleanFileName}`;
       const filePath = `${this.storageBasePath}/${vehicleId}/${fileName}`;
+      console.log('Debug - Preparing upload:', {
+        originalName: file.name,
+        cleanFileName: fileName,
+        filePath,
+        fileType: file.type,
+        fileSize: file.size
+      });
       const storageRef = ref(this.storage, filePath);
 
       // Upload avec metadata
@@ -462,12 +471,27 @@ class VehicleService {
         }
       };
 
-      await uploadBytes(storageRef, file, metadata);
-      const downloadUrl = await getDownloadURL(storageRef);
+      try {
+        console.log('Debug - Starting upload with metadata:', metadata);
+        const uploadResult = await uploadBytes(storageRef, file, metadata);
+        console.log('Debug - Upload successful:', uploadResult);
+        
+        console.log('Debug - Getting download URL...');
+        const downloadUrl = await getDownloadURL(storageRef);
+        console.log('Debug - Download URL obtained:', downloadUrl);
 
-      return { fileUrl: downloadUrl };
+        return { fileUrl: downloadUrl };
+      } catch (uploadError: any) {
+        console.error('Erreur détaillée lors de l\'upload:', {
+          code: uploadError.code,
+          message: uploadError.message,
+          serverResponse: uploadError.serverResponse,
+          name: uploadError.name
+        });
+        throw new Error(`Erreur lors de l'upload: ${uploadError.message}`);
+      }
     } catch (error: any) {
-      console.error('Erreur lors du téléchargement:', error);
+      console.error('Erreur générale:', error);
       
       if (error.code === 'storage/unauthorized') {
         throw new Error('Accès non autorisé au stockage');
