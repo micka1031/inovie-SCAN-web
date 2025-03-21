@@ -143,13 +143,13 @@ const VehicleDetailsPanel: React.FC<VehicleDetailsPanelProps> = ({ vehicle, onCl
                 sx={{ mr: 1 }}
               />
               <Chip 
-                label={vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1)} 
+                label={vehicle.type ? vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1) : '-'} 
                 variant="outlined" 
                 size="small"
                 sx={{ mr: 1 }}
               />
               <Chip 
-                label={vehicle.fuelType.charAt(0).toUpperCase() + vehicle.fuelType.slice(1)} 
+                label={vehicle.fuelType ? vehicle.fuelType.charAt(0).toUpperCase() + vehicle.fuelType.slice(1) : '-'} 
                 variant="outlined" 
                 size="small"
               />
@@ -238,11 +238,11 @@ const VehicleDetailsPanel: React.FC<VehicleDetailsPanelProps> = ({ vehicle, onCl
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Type</Typography>
-                      <Typography variant="body1">{vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1)}</Typography>
+                      <Typography variant="body1">{vehicle.type ? vehicle.type.charAt(0).toUpperCase() + vehicle.type.slice(1) : '-'}</Typography>
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">Carburant</Typography>
-                      <Typography variant="body1">{vehicle.fuelType.charAt(0).toUpperCase() + vehicle.fuelType.slice(1)}</Typography>
+                      <Typography variant="body1">{vehicle.fuelType ? vehicle.fuelType.charAt(0).toUpperCase() + vehicle.fuelType.slice(1) : '-'}</Typography>
                     </Grid>
                   </Grid>
                 </Paper>

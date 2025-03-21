@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Vehicle } from '../../types/Vehicle';
-import { vehicleService } from '../../services/vehicleService';
+import vehicleService from '../../services/vehicleService';
+import initVehicules from '../../scripts/initVehicules';
 import {
   Box,
   Tabs,
@@ -108,6 +109,21 @@ const VehicleManagementPanel: React.FC = () => {
     }
   };
 
+  const handleInitializeVehicles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await initVehicules();
+      await loadVehicles(); // Recharger les véhicules après l'initialisation
+      alert('Véhicules initialisés avec succès');
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'initialisation des véhicules');
+      console.error('Erreur d\'initialisation:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
@@ -185,13 +201,24 @@ const VehicleManagementPanel: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Gestion des véhicules</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenDialog}
-        >
-          Nouveau véhicule
-        </Button>
+        <Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleOpenDialog}
+            sx={{ mr: 1 }}
+          >
+            Nouveau véhicule
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleInitializeVehicles}
+            sx={{ ml: 1 }}
+          >
+            Initialiser les véhicules
+          </Button>
+        </Box>
       </Box>
 
       {error && (

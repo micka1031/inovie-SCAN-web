@@ -5,7 +5,7 @@ import { db } from '../config/firebase';
 import { getStorage } from 'firebase/storage';
 
 class VehicleService {
-  private collection = collection(db, 'vehicles');
+  private collection = collection(db, 'vehicules');
   private documentsCollection = collection(db, 'documents');
   private maintenanceCollection = collection(db, 'maintenance');
   private storage = getStorage();
@@ -486,4 +486,9 @@ class VehicleService {
   }
 }
 
-export const vehicleService = new VehicleService(); 
+// Export the service instance
+const vehicleService = new VehicleService();
+export default vehicleService;
+
+// Export the class as well
+export { VehicleService }; 
