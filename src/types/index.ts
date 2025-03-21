@@ -72,6 +72,15 @@ export interface Vehicule {
   immatriculation: string;
   marque: string;
   modele: string;
+  type: string;
+  annee: number;
+  statut: 'actif' | 'maintenance' | 'inactif';
+  dernierEntretien?: string;
+  coursierAssigne?: string;
+  kilometrage: number;
+  pole?: string;
+  dateCreation?: string;
+  dateModification?: string;
 }
 
 export interface MarkerPreference {

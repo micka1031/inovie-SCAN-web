@@ -21,7 +21,7 @@ interface DataTableProps<T> {
   loading?: boolean;
   pageSize?: number;
   checkboxSelection?: boolean;
-  onSelectionChange?: (selectedIds: GridRowId[]) => void;
+  onSelectionChange?: (selectedIds: GridRowSelectionModel) => void;
   selectionModel?: GridRowId[];
   editMode?: boolean;
   height?: string | number;

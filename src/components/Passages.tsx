@@ -1243,7 +1243,6 @@ const Passages: React.FC = () => {
                         style={{ width: '100%' }}
                         showSearch
                         allowClear
-                        title="Pôle du passage"
                       />
                     ) : (
                       getPoleNameById(passage.pole)

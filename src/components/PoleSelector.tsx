@@ -80,7 +80,6 @@ const PoleSelector: React.FC<PoleSelectorProps> = ({
         option?.children?.toString().toLowerCase().indexOf(input.toLowerCase()) >= 0
       }
       notFoundContent={loading ? <Spin size="small" /> : "Aucun pôle trouvé"}
-      required={required}
     >
       {filteredPoles.map(pole => (
         <Option key={pole.id} value={pole.id}>

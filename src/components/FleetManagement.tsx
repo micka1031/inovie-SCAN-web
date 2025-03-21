@@ -43,7 +43,7 @@ interface VehiculeFormData {
   immatriculation: string;
   marque: string;
   modele: string;
-  annee?: string;
+  annee?: number;
   type?: string;
   pole?: string;
   statut?: string;
@@ -51,6 +51,16 @@ interface VehiculeFormData {
 
 const VEHICULE_TYPES = ['Utilitaire', 'Berline', 'SUV', 'Camionnette', 'Autre'];
 const VEHICULE_STATUTS = ['Actif', 'En maintenance', 'Inactif'];
+
+// Mapping entre statuts affichés et valeurs en base de données
+const mapStatutToDBValue = (statut: string): 'actif' | 'maintenance' | 'inactif' => {
+  switch (statut) {
+    case 'Actif': return 'actif';
+    case 'En maintenance': return 'maintenance';
+    case 'Inactif': return 'inactif';
+    default: return 'actif';
+  }
+};
 
 const FleetManagement: React.FC = () => {
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
@@ -63,7 +73,7 @@ const FleetManagement: React.FC = () => {
     immatriculation: '',
     marque: '',
     modele: '',
-    annee: '',
+    annee: undefined,
     type: '',
     pole: '',
     statut: 'Actif'
@@ -106,6 +116,21 @@ const FleetManagement: React.FC = () => {
     return pole ? pole.nom : poleId;
   };
 
+  // Fonction pour gérer les changements dans l'ajout de véhicule
+  const handleNewVehiculeChange = (field: keyof VehiculeFormData, value: string) => {
+    if (field === 'annee') {
+      setNewVehicule({
+        ...newVehicule,
+        [field]: value ? Number(value) : undefined
+      });
+    } else {
+      setNewVehicule({
+        ...newVehicule,
+        [field]: value
+      });
+    }
+  };
+
   // Ajouter un nouveau véhicule
   const addVehicule = async () => {
     if (!newVehicule.immatriculation.trim() || !newVehicule.marque.trim() || !newVehicule.modele.trim()) {
@@ -127,21 +152,25 @@ const FleetManagement: React.FC = () => {
         return;
       }
       
-      // Créer le nouveau véhicule
-      const vehiculeData = {
-        ...newVehicule,
+      // Créer le nouveau véhicule avec conversion des types
+      const newVehiculeWithCorrectTypes: Omit<Vehicule, 'id'> = {
         immatriculation: newVehicule.immatriculation.trim().toUpperCase(),
         marque: newVehicule.marque.trim(),
         modele: newVehicule.modele.trim(),
+        annee: newVehicule.annee || 0,
+        type: newVehicule.type || '',
+        statut: (newVehicule.statut || 'actif') as 'actif' | 'maintenance' | 'inactif',
+        pole: newVehicule.pole,
+        kilometrage: 0,
         dateCreation: new Date().toISOString(),
         dateModification: new Date().toISOString()
       };
       
       const vehiculesRef = collection(db, 'vehicules');
-      const docRef = await addDoc(vehiculesRef, vehiculeData);
+      const docRef = await addDoc(vehiculesRef, newVehiculeWithCorrectTypes);
       
       // Ajouter le nouveau véhicule à la liste avec son ID
-      setVehicules([...vehicules, { ...vehiculeData, id: docRef.id } as Vehicule]);
+      setVehicules([...vehicules, { ...newVehiculeWithCorrectTypes, id: docRef.id }]);
       
       enqueueSnackbar('Véhicule ajouté avec succès', { variant: 'success' });
       
@@ -150,7 +179,7 @@ const FleetManagement: React.FC = () => {
         immatriculation: '',
         marque: '',
         modele: '',
-        annee: '',
+        annee: undefined,
         type: '',
         pole: '',
         statut: 'Actif'
@@ -256,14 +285,6 @@ const FleetManagement: React.FC = () => {
       enqueueSnackbar('Erreur lors de la suppression du véhicule', { variant: 'error' });
       setLoading(false);
     }
-  };
-
-  // Gestion des changements dans le formulaire d'ajout
-  const handleNewVehiculeChange = (field: keyof VehiculeFormData, value: string) => {
-    setNewVehicule({
-      ...newVehicule,
-      [field]: value
-    });
   };
 
   return (
@@ -397,7 +418,7 @@ const FleetManagement: React.FC = () => {
             type="text"
             fullWidth
             variant="outlined"
-            value={newVehicule.annee || ''}
+            value={newVehicule.annee?.toString() || ''}
             onChange={(e) => handleNewVehiculeChange('annee', e.target.value)}
             sx={{ mb: 2 }}
           />
@@ -506,8 +527,8 @@ const FleetManagement: React.FC = () => {
                 type="text"
                 fullWidth
                 variant="outlined"
-                value={currentVehicule.annee || ''}
-                onChange={(e) => setCurrentVehicule({...currentVehicule, annee: e.target.value})}
+                value={currentVehicule.annee?.toString() || ''}
+                onChange={(e) => setCurrentVehicule({...currentVehicule, annee: e.target.value ? Number(e.target.value) : undefined})}
                 sx={{ mb: 2 }}
               />
               <FormControl fullWidth margin="dense" sx={{ mb: 2 }}>
@@ -540,9 +561,12 @@ const FleetManagement: React.FC = () => {
                 <InputLabel id="edit-vehicule-statut-label">Statut</InputLabel>
                 <Select
                   labelId="edit-vehicule-statut-label"
-                  value={currentVehicule.statut || 'Actif'}
+                  value={currentVehicule.statut || 'actif'}
                   label="Statut"
-                  onChange={(e: SelectChangeEvent) => setCurrentVehicule({...currentVehicule, statut: e.target.value})}
+                  onChange={(e: SelectChangeEvent) => setCurrentVehicule({
+                    ...currentVehicule, 
+                    statut: mapStatutToDBValue(e.target.value)
+                  })}
                 >
                   {VEHICULE_STATUTS.map((statut) => (
                     <MenuItem key={statut} value={statut}>{statut}</MenuItem>

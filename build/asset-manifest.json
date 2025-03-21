@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/static/css/main.195dc67c.css",
+    "main.js": "/static/js/main.76d0f32b.js",
+    "static/media/logo-inovie.png": "/static/media/logo-inovie.30c58dcf860b89e8be87.png",
+    "static/media/logo-inovie-white.png": "/static/media/logo-inovie-white.fef405e43d6d4f60f2fe.png",
+    "index.html": "/index.html",
+    "main.195dc67c.css.map": "/static/css/main.195dc67c.css.map",
+    "main.76d0f32b.js.map": "/static/js/main.76d0f32b.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.195dc67c.css",
+    "static/js/main.76d0f32b.js"
+  ]
+}
