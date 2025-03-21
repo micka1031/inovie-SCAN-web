@@ -303,6 +303,20 @@ const VehicleInspections: React.FC<VehicleInspectionsProps> = ({ vehicle }) => {
     }
   };
   
+  const handleCreateTestInspection = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await vehicleInspectionService.createTestInspection(vehicle.id);
+      await loadInspections(); // Recharger les inspections après la création
+    } catch (err) {
+      console.error('Erreur lors de la création de l\'inspection de test:', err);
+      setError('Erreur lors de la création de l\'inspection de test');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -324,6 +338,14 @@ const VehicleInspections: React.FC<VehicleInspectionsProps> = ({ vehicle }) => {
             sx={{ mr: 1 }}
           >
             Créer une inspection intégrée
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCreateTestInspection}
+            sx={{ mr: 1 }}
+          >
+            Créer une inspection de test
           </Button>
           {currentUser?.role === 'Administrateur' && (
             <Button

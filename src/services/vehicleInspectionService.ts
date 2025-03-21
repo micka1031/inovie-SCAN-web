@@ -387,6 +387,59 @@ class VehicleInspectionService {
       };
     }
   }
+
+  // Méthode pour créer une inspection de test
+  async createTestInspection(vehicleId: string): Promise<VehicleInspection> {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      const now = Timestamp.now();
+      const testInspection: Omit<VehicleInspection, 'id'> = {
+        vehicleId,
+        date: now.toDate().toISOString(),
+        inspectorName: user.displayName || user.email || 'Inspecteur Test',
+        odometer: 50000,
+        status: 'passed',
+        generalComments: 'Inspection de test',
+        inspectionItems: [
+          {
+            id: 'item1',
+            category: 'Sécurité',
+            name: 'Freins',
+            status: 'ok',
+            comments: 'RAS',
+            photos: []
+          },
+          {
+            id: 'item2',
+            category: 'Extérieur',
+            name: 'Carrosserie',
+            status: 'ok',
+            comments: 'RAS',
+            photos: []
+          }
+        ],
+        actionRequired: false,
+        actionDescription: '',
+        createdAt: now.toDate().toISOString(),
+        updatedAt: now.toDate().toISOString()
+      };
+
+      const docRef = await addDoc(this.collectionRef, testInspection);
+      return {
+        id: docRef.id,
+        ...testInspection
+      };
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'inspection de test:', error);
+      throw error;
+    }
+  }
 }
 
 const vehicleInspectionService = new VehicleInspectionService();
