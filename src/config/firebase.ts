@@ -3,14 +3,15 @@ import { getFirestore, enableIndexedDbPersistence, setLogLevel } from 'firebase/
 import { getStorage } from 'firebase/storage';
 import { getAuth, setPersistence, browserSessionPersistence } from 'firebase/auth';
 
-// Configuration Firebase
+// Configuration Firebase directe (temporaire pour déboguer)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: "AIzaSyBWDncE18JG9yjPX4kxTbSB9wLPi2qcAOw",
+  authDomain: "application-inovie-scan.firebaseapp.com",
+  projectId: "application-inovie-scan",
+  storageBucket: "application-inovie-scan.firebasestorage.app",
+  messagingSenderId: "703727839643",
+  appId: "1:703727839643:web:f58c9241fb0d05a813593e",
+  measurementId: "G-ZQF14KV51G"
 };
 
 // Configuration des logs

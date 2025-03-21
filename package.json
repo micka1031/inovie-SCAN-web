@@ -38,11 +38,11 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "build-ignore-ts": "cross-env TSC_COMPILE_ON_ERROR=true DISABLE_ESLINT_PLUGIN=true react-scripts build",
-    "test": "react-scripts test",
+    "start": "vite",
+    "dev": "vite --force",
+    "build": "vite build",
+    "build-ignore-ts": "cross-env TSC_COMPILE_ON_ERROR=true vite build --force",
+    "test": "vitest",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
