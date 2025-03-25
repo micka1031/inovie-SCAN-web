@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "application-inovie-scan"
+  },
+  "targets": {
+    "application-inovie-scan": {
+      "hosting": {
+        "app": [
+          "application-inovie-scan"
+        ],
+        "links": [
+          "application-inovie-scan-links"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,191 @@
+/* Styles pour le mode édition */
+.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
+}
+
+.selected-row {
+  background-color: rgba(25, 118, 210, 0.1) !important;
+}
+
+.selected-row:hover {
+  background-color: rgba(25, 118, 210, 0.2) !important;
+}
+
+.button-danger {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+
+.button-danger:hover {
+  background-color: #d32f2f !important;
+}
+
+.button-danger:disabled {
+  background-color: #e0e0e0 !important;
+  color: #9e9e9e !important;
+  cursor: not-allowed !important;
+}
+
+/* Styles pour l'édition en ligne */
+.inline-edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.inline-edit-input:focus, 
+.inline-edit-select:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2), 0 5px 15px rgba(0, 0, 0, 0.2);
+  z-index: 9999 !important;
+  position: relative !important;
+}
+
+/* Style pour aider le positionnement des champs en focus */
+.data-table.editing td {
+  position: relative !important;
+  z-index: auto !important;
+}
+
+/* Assurer que les éléments en focus sont au premier plan */
+.inline-edit-input:focus, 
+.inline-edit-select:focus {
+  position: absolute !important;
+  background-color: white !important;
+  padding: 10px !important;
+  border-radius: 4px !important;
+  transform: translateY(-4px) !important;
+}
+
+.inline-edit-input[type="time"],
+.inline-edit-input[type="date"] {
+  position: relative;
+  z-index: 100;
+}
+
+/* Style pour le panneau du sélecteur d'heure */
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: relative;
+  z-index: 101;
+}
+
+/* Assurer que le panneau de sélection s'affiche au-dessus des autres éléments */
+input[type="time"]::-webkit-time-picker,
+input[type="date"]::-webkit-datetime-edit {
+  position: relative;
+  z-index: 102;
+}
+
+.inline-edit-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+/* Assurer que le conteneur du tableau ne coupe pas les éléments */
+.passages-table-container {
+  overflow: visible !important;
+}
+
+.passages-table {
+  position: relative;
+  z-index: 1;
+}
+
+.passages-table td {
+  position: relative;
+}
+
+/* Styles pour les statuts */
+.status-active {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.status-inactive {
+  color: #f44336;
+  font-weight: 500;
+}
+
+/* Styles pour les DatePicker */
+.custom-datepicker-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.custom-datepicker-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.custom-datepicker-input:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.react-datepicker {
+  font-family: 'Roboto', sans-serif;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.react-datepicker__header {
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.react-datepicker__day--selected {
+  background-color: #1976d2;
+  color: white;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: rgba(25, 118, 210, 0.7);
+  color: white;
+}
+
+.react-datepicker__day:hover {
+  background-color: rgba(25, 118, 210, 0.1);
+}
+
+.react-datepicker__close-icon::after {
+  background-color: #f44336;
+}
+
+/* Style pour le bouton d'enregistrement */
+.button-save {
+  background-color: #4CAF50 !important;
+  color: white !important;
+}
+
+.button-save:hover {
+  background-color: #388E3C !important;
+}
