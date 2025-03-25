@@ -1,0 +1,9 @@
+[
+  {
+    "localId": "testuser123",
+    "email": "test@example.com",
+    "emailVerified": true,
+    "passwordHash": "sha256:$sha256$UGFzc3dvcmQxMjM=",
+    "salt": "testSalt"
+  }
+] 

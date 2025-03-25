@@ -1,0 +1,89 @@
+.tournees-table-container {
+  padding: 20px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.table-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.search-box input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 300px;
+  font-size: 14px;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.tournees-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.7rem;
+}
+
+.tournees-table th,
+.tournees-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  font-size: 0.7rem;
+}
+
+.tournees-table th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.7rem;
+}
+
+.tournees-table tr:hover {
+  background-color: #f8fafc;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.actif {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.inactif {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.en_cours {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.termine {
+  background-color: #f3e8fd;
+  color: #6b21a8;
+}
+
+.status-badge.inconnu {
+  background-color: #f1f5f9;
+  color: #475569;
+} 
