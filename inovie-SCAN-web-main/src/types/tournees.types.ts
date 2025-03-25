@@ -2,24 +2,24 @@ export interface Site {
     id: string;
     nom: string;
     adresse: string;
-    ville: string;
     codePostal: string;
+    ville: string;
     latitude: number;
     longitude: number;
-    // Autres propriétés potentielles
 }
 
 export interface SiteTournee {
-    id: string; // référence au site dans la collection Sites
+    id: string;  // ID unique généré (peut contenir un timestamp pour permettre les doublons)
+    siteId?: string; // ID référençant le site original
     ordre: number;
     heureArrivee: Date;
-    site?: Site; // Optionnel: données complètes du site
+    site?: Site; // Données complètes du site (optionnel, utilisé pour l'affichage)
 }
 
 export interface Tournee {
     id?: string;
     nom: string;
-    pole: string; // référence à l'ID du pôle
+    pole: string;
     heureDebut: Date;
     heureFin: Date;
     sites: SiteTournee[];
@@ -27,15 +27,21 @@ export interface Tournee {
     createdAt?: Date;
 }
 
+export interface RoutePoint {
+    lat: number;
+    lng: number;
+}
+
 export interface RouteInfo {
+    origin: RoutePoint;
+    destination: RoutePoint;
     distance: number; // en mètres
     duration: number; // en secondes
-    polyline: string; // format encodé pour affichage sur la carte
+    points: RoutePoint[];
 }
 
 export interface TourOptimization {
-    sitesOrder: string[]; // IDs des sites dans l'ordre optimisé
+    sitesOrder: string[];
     totalDistance: number;
     totalDuration: number;
-    routes: RouteInfo[];
 }

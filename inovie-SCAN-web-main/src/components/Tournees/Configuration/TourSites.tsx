@@ -1,13 +1,14 @@
-import React from 'react';
-import { Box, Typography, Paper, IconButton, List, ListItem, ListItemText, Chip, Button } from '@mui/material';
+import React, { useCallback, useRef } from 'react';
+import { Box, Typography, Paper, IconButton, List, ListItem, ListItemText, Chip, Button, ListItemSecondaryAction } from '@mui/material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import fr from 'date-fns/locale/fr';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 import { Site, SiteTournee } from '../../../types/tournees.types';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { useTheme } from '@mui/material';
 
 interface TourSitesProps {
   sites?: SiteTournee[];
@@ -26,19 +27,37 @@ const TourSites: React.FC<TourSitesProps> = ({
   onBack,
   onNext
 }) => {
+  const theme = useTheme();
+  
+  // Référence pour tracker les IDs uniques des sites
+  const uniqueIdMapRef = useRef<Map<string, string>>(new Map());
+  
+  // Forcer la régénération des IDs uniques pour les éléments glissables
+  const getUniqueKeyForSite = useCallback((site: SiteTournee): string => {
+    // Si nous avons déjà généré un ID unique pour ce site, le retourner
+    const siteIdOrUniqueId = site.id;
+    
+    if (uniqueIdMapRef.current.has(siteIdOrUniqueId)) {
+      return uniqueIdMapRef.current.get(siteIdOrUniqueId)!;
+    }
+    
+    // Sinon, générer un nouvel ID unique et le stocker
+    const uniqueKey = `${siteIdOrUniqueId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    uniqueIdMapRef.current.set(siteIdOrUniqueId, uniqueKey);
+    return uniqueKey;
+  }, []);
+
   // Gestion de l'heure d'arrivée
-  const handleTimeChange = (siteId: string, time: Date | null) => {
+  const handleTimeChange = useCallback((siteId: string, time: Date | null) => {
     if (!time) return;
     
-    const updatedSites = sites.map(site => 
+    onSitesChange(sites.map(site => 
       site.id === siteId ? { ...site, heureArrivee: time } : site
-    );
-    
-    onSitesChange(updatedSites);
-  };
+    ));
+  }, [sites, onSitesChange]);
   
   // Supprimer un site
-  const handleRemoveSite = (siteId: string) => {
+  const handleRemoveSite = useCallback((siteId: string) => {
     const updatedSites = sites.filter(site => site.id !== siteId);
     
     // Réordonner les sites restants
@@ -48,24 +67,44 @@ const TourSites: React.FC<TourSitesProps> = ({
     }));
     
     onSitesChange(reorderedSites);
+  }, [sites, onSitesChange]);
+  
+  const getSiteDetails = (siteId: string, allSites: Site[]) => {
+    // Extraire l'ID original du site si nécessaire (pour les sites avec ID généré format "originalId_timestamp")
+    const originalId = siteId.includes('_') ? siteId.split('_')[0] : siteId;
+    const site = allSites.find(s => s.id === originalId);
+    
+    if (!site) {
+      console.error(`Site with id ${siteId} not found`);
+      return { nom: 'Site inconnu', adresse: '', ville: '' };
+    }
+    
+    return site;
   };
   
-  // Gestion du drag & drop pour réordonner les sites
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
+  const handleOnDragEnd = useCallback((result: DropResult) => {
+    // Logging pour déboguer
+    console.log('Drag result:', result);
     
-    const items = Array.from(sites);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    // Si pas de destination ou même position, ne rien faire
+    if (!result.destination || result.destination.index === result.source.index) {
+      return;
+    }
+
+    // Création d'une copie pour manipuler l'ordre
+    const updatedSites = [...sites];
+    const [movedSite] = updatedSites.splice(result.source.index, 1);
+    updatedSites.splice(result.destination.index, 0, movedSite);
     
-    // Mettre à jour l'ordre
-    const updatedSites = items.map((site, index) => ({
+    // Mise à jour des indices d'ordre
+    const reorderedSites = updatedSites.map((site, index) => ({
       ...site,
-      ordre: index + 1
+      ordre: index
     }));
     
-    onSitesChange(updatedSites);
-  };
+    // Appel de la fonction de callback avec les sites réorganisés
+    onSitesChange(reorderedSites);
+  }, [sites, onSitesChange]);
   
   return (
     <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
@@ -89,86 +128,97 @@ const TourSites: React.FC<TourSitesProps> = ({
           Aucun site ajouté à cette tournée. Cliquez sur "Ajouter un site" pour commencer.
         </Typography>
       ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="sites-list">
+        <DragDropContext onDragEnd={handleOnDragEnd}>
+          <Droppable droppableId="tour-sites">
             {(provided) => (
-              <List {...provided.droppableProps} ref={provided.innerRef}>
-                {sites.map((siteTournee, index) => {
-                  const siteInfo = siteTournee.site || 
-                    (availableSites.find(s => s.id === siteTournee.id)) || 
-                    { nom: 'Site inconnu', adresse: '', ville: '', codePostal: '' };
-                  
-                  return (
-                    <Draggable 
-                      key={siteTournee.id} 
-                      draggableId={siteTournee.id} 
-                      index={index}
-                    >
-                      {(provided) => (
-                        <ListItem
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          sx={{ 
-                            border: '1px solid #e0e0e0', 
-                            borderRadius: 1, 
-                            mb: 1,
-                            bgcolor: '#f9f9f9'
-                          }}
-                        >
-                          <Box {...provided.dragHandleProps} sx={{ mr: 1 }}>
-                            <DragIndicatorIcon color="action" />
-                          </Box>
-                          
-                          <ListItemText 
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Chip 
-                                  label={`#${siteTournee.ordre}`} 
-                                  size="small" 
-                                  color="primary" 
-                                  sx={{ mr: 1 }}
-                                />
-                                <Typography variant="subtitle1">
-                                  {siteInfo.nom}
-                                </Typography>
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2" color="text.secondary">
-                                  {siteInfo.adresse}, {siteInfo.codePostal} {siteInfo.ville}
-                                </Typography>
-                                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={fr}>
-                                  <TimePicker
-                                    label="Heure d'arrivée prévue"
-                                    value={siteTournee.heureArrivee}
-                                    onChange={(newValue) => handleTimeChange(siteTournee.id, newValue)}
-                                    slotProps={{
-                                      textField: {
-                                        size: 'small',
-                                        sx: { mt: 1, width: '100%', maxWidth: '200px' }
-                                      }
-                                    }}
-                                  />
-                                </LocalizationProvider>
-                              </Box>
-                            }
-                          />
-                          
-                          <IconButton 
-                            edge="end" 
-                            aria-label="delete" 
-                            onClick={() => handleRemoveSite(siteTournee.id)}
+              <Paper 
+                elevation={2}
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                sx={{ 
+                  maxHeight: '400px', 
+                  overflow: 'auto',
+                  border: `1px solid ${theme.palette.divider}`
+                }}
+              >
+                <List dense>
+                  {sites.map((siteTournee, index) => {
+                    // Générer une clé vraiment unique pour chaque site
+                    const dragId = getUniqueKeyForSite(siteTournee);
+                    
+                    const site = getSiteDetails(siteTournee.siteId || siteTournee.id, availableSites);
+                    return (
+                      <Draggable 
+                        key={dragId} 
+                        draggableId={dragId} 
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <ListItem
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            sx={{
+                              bgcolor: snapshot.isDragging ? 'rgba(0, 171, 85, 0.08)' : 'transparent',
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                              '&:last-child': {
+                                borderBottom: 'none'
+                              }
+                            }}
                           >
-                            <DeleteIcon />
-                          </IconButton>
-                        </ListItem>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {provided.placeholder}
-              </List>
+                            <Box 
+                              {...provided.dragHandleProps}
+                              sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                cursor: 'grab'
+                              }}
+                            >
+                              <DragHandleIcon color="action" />
+                            </Box>
+                            
+                            <ListItemText 
+                              primary={
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                  <Chip 
+                                    label={`#${siteTournee.ordre}`} 
+                                    size="small" 
+                                    color="primary" 
+                                    sx={{ mr: 1 }}
+                                  />
+                                  <Typography variant="subtitle1">
+                                    {site.nom}
+                                  </Typography>
+                                </Box>
+                              }
+                              secondary={
+                                <Box component="span">
+                                  {site.adresse}
+                                  <br />
+                                  {site.ville}
+                                  {site.codePostal && `, ${site.codePostal}`}
+                                </Box>
+                              }
+                              sx={{ ml: 2 }}
+                            />
+                            
+                            <ListItemSecondaryAction>
+                              <IconButton 
+                                edge="end"
+                                aria-label="delete"
+                                onClick={() => handleRemoveSite(siteTournee.id)}
+                                size="small"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </ListItemSecondaryAction>
+                          </ListItem>
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
+                </List>
+              </Paper>
             )}
           </Droppable>
         </DragDropContext>
@@ -191,4 +241,4 @@ const TourSites: React.FC<TourSitesProps> = ({
   );
 };
 
-export default TourSites;
+export default React.memo(TourSites);

@@ -1,6 +1,66 @@
-import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db, handleFirebaseError } from '../firebase';
 import { Tournee, Site, SiteTournee } from '../types/tournees.types';
+
+// Références de collections mémorisées pour réduire les recréations
+const sitesCollectionRef = collection(db, 'sites');
+const tourneesCollectionRef = collection(db, 'tournees');
+
+/**
+ * Convertir une date JavaScript en Timestamp Firestore
+ */
+const dateToTimestamp = (date: Date | number | string): Timestamp => {
+  if (!date) return Timestamp.now();
+  
+  try {
+    // Si c'est déjà un Timestamp, le retourner
+    if (typeof date === 'object' && 'seconds' in date && 'nanoseconds' in date) {
+      return date as unknown as Timestamp;
+    }
+    
+    // Convertir une date en Timestamp
+    const dateObj = date instanceof Date ? date : new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Date invalide, utilisation de la date actuelle:', date);
+      return Timestamp.now();
+    }
+    
+    return Timestamp.fromDate(dateObj);
+  } catch (error) {
+    console.error('Erreur lors de la conversion de la date:', error);
+    return Timestamp.now();
+  }
+};
+
+/**
+ * Assurer que toutes les dates dans un objet tournée sont des Timestamps
+ */
+const prepareTourneeForFirestore = (tournee: Partial<Tournee>): Record<string, any> => {
+  const result: Record<string, any> = { ...tournee };
+  
+  // Convertir les dates principales
+  if (tournee.heureDebut) {
+    result.heureDebut = dateToTimestamp(tournee.heureDebut);
+  }
+  
+  if (tournee.heureFin) {
+    result.heureFin = dateToTimestamp(tournee.heureFin);
+  }
+  
+  if (tournee.createdAt) {
+    result.createdAt = dateToTimestamp(tournee.createdAt);
+  }
+  
+  // Convertir les dates dans les sites
+  if (tournee.sites && Array.isArray(tournee.sites)) {
+    result.sites = tournee.sites.map(site => ({
+      ...site,
+      heureArrivee: site.heureArrivee ? dateToTimestamp(site.heureArrivee) : null
+    }));
+  }
+  
+  return result;
+};
 
 export const tourneesService = {
   /**
@@ -9,8 +69,7 @@ export const tourneesService = {
   getSites: async (): Promise<Site[]> => {
     try {
       console.log('Chargement des sites...');
-      const sitesRef = collection(db, 'sites');
-      const snapshot = await getDocs(sitesRef);
+      const snapshot = await getDocs(sitesCollectionRef);
       
       if (snapshot.empty) {
         console.log('Aucun site trouvé, ajout de sites de démonstration...');
@@ -88,16 +147,20 @@ export const tourneesService = {
         }
       ];
       
-      const sitesRef = collection(db, 'sites');
       const createdSites: Site[] = [];
       
+      // Créer les sites en lot pour optimiser les performances
+      const batch = [];
       for (const site of demoSites) {
-        const docRef = await addDoc(sitesRef, site);
-        createdSites.push({
+        batch.push(addDoc(sitesCollectionRef, site).then(docRef => ({
           id: docRef.id,
           ...site
-        });
+        })));
       }
+      
+      // Attendre que tous les sites soient créés
+      const results = await Promise.all(batch);
+      createdSites.push(...results);
       
       console.log(`${createdSites.length} sites de démonstration créés`);
       return createdSites;
@@ -110,10 +173,15 @@ export const tourneesService = {
 
   // Récupérer les sites filtrés par pôle
   async getSitesByPole(poleId: string): Promise<Site[]> {
-    const sitesRef = collection(db, 'Sites');
-    const q = query(sitesRef, where('pole', '==', poleId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Site));
+    try {
+      const q = query(sitesCollectionRef, where('pole', '==', poleId));
+      const snapshot = await getDocs(q);
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Site));
+    } catch (error) {
+      console.error(`Erreur lors de la récupération des sites pour le pôle ${poleId}:`, error);
+      handleFirebaseError(error);
+      return [];
+    }
   },
 
   /**
@@ -121,13 +189,14 @@ export const tourneesService = {
    */
   createTournee: async (tournee: Omit<Tournee, 'id'>): Promise<string> => {
     try {
+      // Préparer les données avec les dates correctement formatées
       const tourneeData = {
-        ...tournee,
+        ...prepareTourneeForFirestore(tournee),
         createdAt: serverTimestamp(),
         createdBy: tournee.createdBy || null
       };
       
-      const docRef = await addDoc(collection(db, 'tournees'), tourneeData);
+      const docRef = await addDoc(tourneesCollectionRef, tourneeData);
       console.log('Tournée créée avec ID:', docRef.id);
       return docRef.id;
     } catch (error) {
@@ -142,11 +211,39 @@ export const tourneesService = {
    */
   getTournees: async (): Promise<Tournee[]> => {
     try {
-      const snapshot = await getDocs(collection(db, 'tournees'));
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Tournee[];
+      const snapshot = await getDocs(tourneesCollectionRef);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        
+        // Convertir les Timestamps en objets Date
+        const tournee: any = {
+          id: doc.id,
+          ...data
+        };
+        
+        // Convertir les dates principales
+        if (data.heureDebut) {
+          tournee.heureDebut = data.heureDebut.toDate();
+        }
+        
+        if (data.heureFin) {
+          tournee.heureFin = data.heureFin.toDate();
+        }
+        
+        if (data.createdAt) {
+          tournee.createdAt = data.createdAt.toDate();
+        }
+        
+        // Convertir les dates dans les sites
+        if (data.sites && Array.isArray(data.sites)) {
+          tournee.sites = data.sites.map((site: any) => ({
+            ...site,
+            heureArrivee: site.heureArrivee ? site.heureArrivee.toDate() : new Date()
+          }));
+        }
+        
+        return tournee as Tournee;
+      });
     } catch (error) {
       console.error('Erreur lors de la récupération des tournées:', error);
       handleFirebaseError(error);
@@ -166,10 +263,36 @@ export const tourneesService = {
         throw new Error(`Tournée avec ID ${id} introuvable`);
       }
       
-      return {
+      const tourneeData = docSnap.data();
+      
+      // Convertir les Timestamps en objets Date
+      const tournee: any = {
         id: docSnap.id,
-        ...docSnap.data()
-      } as Tournee;
+        ...tourneeData
+      };
+      
+      // Convertir les dates principales
+      if (tourneeData.heureDebut) {
+        tournee.heureDebut = tourneeData.heureDebut.toDate();
+      }
+      
+      if (tourneeData.heureFin) {
+        tournee.heureFin = tourneeData.heureFin.toDate();
+      }
+      
+      if (tourneeData.createdAt) {
+        tournee.createdAt = tourneeData.createdAt.toDate();
+      }
+      
+      // Convertir les dates dans les sites
+      if (tourneeData.sites && Array.isArray(tourneeData.sites)) {
+        tournee.sites = tourneeData.sites.map((site: any) => ({
+          ...site,
+          heureArrivee: site.heureArrivee ? site.heureArrivee.toDate() : new Date()
+        }));
+      }
+      
+      return tournee as Tournee;
     } catch (error) {
       console.error(`Erreur lors de la récupération de la tournée ${id}:`, error);
       handleFirebaseError(error);
@@ -183,10 +306,14 @@ export const tourneesService = {
   updateTournee: async (id: string, tournee: Partial<Tournee>): Promise<void> => {
     try {
       const docRef = doc(db, 'tournees', id);
-      await updateDoc(docRef, {
-        ...tournee,
+      
+      // Préparer les données avec les dates correctement formatées
+      const tourneeData = {
+        ...prepareTourneeForFirestore(tournee),
         updatedAt: serverTimestamp()
-      });
+      };
+      
+      await updateDoc(docRef, tourneeData);
       console.log(`Tournée ${id} mise à jour`);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de la tournée ${id}:`, error);

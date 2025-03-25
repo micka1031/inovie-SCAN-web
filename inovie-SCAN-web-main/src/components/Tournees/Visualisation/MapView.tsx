@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, Paper, Button, CircularProgress, Typography, Alert } from '@mui/material';
-import OptimizeIcon from '@mui/icons-material/Upgrade';
+import { Box, Paper, Typography, Button, CircularProgress } from '@mui/material';
+import { Autorenew } from '@mui/icons-material';
+import { Site, SiteTournee } from '../../../types/tournees.types';
+import { mapService } from '../../../services/mapService';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
-import { Site, SiteTournee } from '@/types/tournees.types';
-import { mapService } from '@/services/mapService';
-import './MapView.css';
 
 // Résoudre le problème des icônes Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -16,34 +15,34 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Composant pour ajuster la vue de la carte
-const MapBoundsAdjuster: React.FC<{ coordinates: [number, number][] }> = ({ coordinates }) => {
+// Composant pour ajuster la vue aux marqueurs
+const FitBounds = ({ positions }: { positions: [number, number][] }) => {
   const map = useMap();
   
   useEffect(() => {
-    if (coordinates.length > 0) {
-      const bounds = L.latLngBounds(coordinates.map(coord => L.latLng(coord[0], coord[1])));
-      map.fitBounds(bounds, { padding: [50, 50] });
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      map.fitBounds(bounds);
     }
-  }, [coordinates, map]);
+  }, [map, positions]);
   
   return null;
 };
 
-// Icônes personnalisées
-const createCustomIcon = (color: string, order?: number) => {
+// Créer une icône personnalisée
+const createCustomIcon = (color: string, index: number) => {
   return L.divIcon({
     className: 'custom-div-icon',
-    html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);">${order !== undefined ? order : ''}</div>`,
+    html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);">${index}</div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 15]
   });
 };
 
-// Types de marqueurs
-const START_ICON = createCustomIcon('#4CAF50', 1);
-const END_ICON = createCustomIcon('#F44336');
-const INTERMEDIATE_ICON = (order: number) => createCustomIcon('#2196F3', order);
+// Obtenir l'ID du site original à partir de l'ID unique
+const getOriginalSiteId = (uniqueId: string): string => {
+  return uniqueId.includes('_') ? uniqueId.split('_')[0] : uniqueId;
+};
 
 interface MapViewProps {
   sites: SiteTournee[];
@@ -53,117 +52,131 @@ interface MapViewProps {
 
 const MapView: React.FC<MapViewProps> = ({ sites, allSites, onOptimize }) => {
   const [polylinePositions, setPolylinePositions] = useState<[number, number][]>([]);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [optimizationError, setOptimizationError] = useState<string | null>(null);
-
-  // Trouver le centre de la carte
-  const getMapCenter = (): [number, number] => {
-    if (sites.length === 0) return [46.603354, 1.888334]; // Centre de la France par défaut
-
-    // Utiliser le premier site comme centre
-    const firstSite = allSites[sites[0]?.id];
-    if (firstSite) {
-      return [firstSite.latitude, firstSite.longitude];
-    }
-
-    return [46.603354, 1.888334];
-  };
-
-  // Préparer les positions pour les polylines et les marqueurs
+  const [optimizationLoading, setOptimizationLoading] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Préparer les positions des marqueurs et polylines
   useEffect(() => {
-    if (sites.length < 2) {
-      setPolylinePositions([]);
-      return;
-    }
-
-    const positions: [number, number][] = sites.map(siteTournee => {
-      const site = allSites[siteTournee.id];
-      if (!site) {
-        console.error(`Site with id ${siteTournee.id} not found in allSites`);
-        return [0, 0]; // Valeur par défaut pour éviter les erreurs
+    if (sites.length === 0) return;
+    
+    const positions: [number, number][] = [];
+    
+    sites.forEach(siteTournee => {
+      const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+      const site = allSites[originalId];
+      if (site && site.latitude && site.longitude) {
+        positions.push([site.latitude, site.longitude]);
       }
-      return [site.latitude, site.longitude];
     });
-
+    
     setPolylinePositions(positions);
-  }, [sites, allSites]);
-
-  // Gérer l'optimisation de la tournée
-  const handleOptimize = async () => {
-    if (sites.length < 2) {
-      setOptimizationError("Il faut au moins 2 sites pour optimiser une tournée.");
-      return;
+    
+    // Calculer les infos d'itinéraire si au moins 2 sites
+    if (sites.length >= 2) {
+      const sitesWithData = sites.map(site => {
+        const originalId = site.siteId || getOriginalSiteId(site.id);
+        return {
+          ...site,
+          site: allSites[originalId]
+        };
+      });
+      
+      mapService.calculateRoute(sitesWithData)
+        .then(route => {
+          setRouteInfo(route);
+        })
+        .catch(err => {
+          console.error('Erreur lors du calcul de l\'itinéraire:', err);
+          setError("Impossible de calculer l'itinéraire. Certaines coordonnées peuvent être manquantes.");
+        });
     }
-
-    setIsOptimizing(true);
-    setOptimizationError(null);
-
+  }, [sites, allSites]);
+  
+  // Optimiser la tournée
+  const handleOptimizeTour = async () => {
+    if (sites.length < 3) return;
+    
+    setOptimizationLoading(true);
+    
     try {
-      // Extraire les sites complets pour l'optimisation
-      const sitesArray = sites.map(siteTournee => {
-        return allSites[siteTournee.id];
-      }).filter(Boolean) as Site[];
-
-      // Appeler le service d'optimisation
-      const optimizationResult = await mapService.optimizeTour(sitesArray);
-
-      // Mettre à jour l'ordre des sites
-      onOptimize(optimizationResult.sitesOrder);
-    } catch (error) {
-      console.error('Erreur lors de l\'optimisation:', error);
-      setOptimizationError("Une erreur est survenue lors de l'optimisation de la tournée.");
+      // Convertir les sites de la tournée en sites standard pour l'optimisation
+      const sitesForOptimization: Site[] = sites.map(siteTournee => {
+        const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+        return allSites[originalId];
+      });
+      
+      // Calculer l'ordre optimal
+      const optimization = await mapService.optimizeTour(sitesForOptimization);
+      
+      // Appliquer le nouvel ordre en préservant les IDs uniques des sites
+      onOptimize(sites.map((site, index) => site.id));
+    } catch (err) {
+      console.error('Erreur lors de l\'optimisation de la tournée:', err);
+      setError("Impossible d'optimiser l'itinéraire. Veuillez réessayer.");
     } finally {
-      setIsOptimizing(false);
+      setOptimizationLoading(false);
     }
   };
+  
+  // Calculer la distance et la durée totales
+  const routeSummary = React.useMemo(() => {
+    if (!routeInfo) return null;
+    
+    // Calculer la durée totale (en minutes) et la distance totale (en km)
+    const totalDuration = Math.round(routeInfo.duration / 60);
+    const totalDistance = (routeInfo.distance / 1000).toFixed(1);
+    
+    return { totalDuration, totalDistance };
+  }, [routeInfo]);
+
+  // Centre de la carte par défaut (France)
+  const defaultCenter: [number, number] = [46.227638, 2.213749];
+  
+  if (error) {
+    return (
+      <Paper sx={{ p: 2, height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Paper>
+    );
+  }
 
   return (
-    <Paper elevation={3} sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Paper sx={{ p: 2, position: 'relative' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
         <Typography variant="h6">Carte de la tournée</Typography>
         <Button
-          variant="contained"
-          color="primary"
-          startIcon={<OptimizeIcon />}
-          onClick={handleOptimize}
-          disabled={isOptimizing || sites.length < 2}
+          variant="outlined"
+          startIcon={optimizationLoading ? <CircularProgress size={20} /> : <Autorenew />}
+          onClick={handleOptimizeTour}
+          disabled={optimizationLoading || sites.length < 3}
         >
-          {isOptimizing ? 'Optimisation...' : 'Optimiser la tournée'}
+          Optimiser la tournée
         </Button>
       </Box>
       
-      {optimizationError && (
-        <Alert severity="error" sx={{ m: 2 }}>{optimizationError}</Alert>
+      {routeSummary && (
+        <Box sx={{ mb: 1, display: 'flex', gap: 2 }}>
+          <Typography variant="body2">
+            <strong>Distance totale:</strong> {routeSummary.totalDistance} km
+          </Typography>
+          <Typography variant="body2">
+            <strong>Durée estimée:</strong> {routeSummary.totalDuration} min
+          </Typography>
+        </Box>
       )}
-
-      <Box className="map-container" sx={{ flexGrow: 1, position: 'relative' }}>
-        {isOptimizing && (
-          <Box 
-            sx={{ 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              zIndex: 1000
-            }}
-          >
-            <Box sx={{ textAlign: 'center' }}>
-              <CircularProgress size={50} />
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                Optimisation en cours...
-              </Typography>
-            </Box>
-          </Box>
-        )}
-
-        <MapContainer
-          center={getMapCenter()}
-          zoom={5}
+      
+      <Box
+        sx={{
+          height: '450px',
+          width: '100%',
+          borderRadius: 1,
+          overflow: 'hidden'
+        }}
+      >
+        <MapContainer 
+          center={polylinePositions.length > 0 ? polylinePositions[0] : defaultCenter}
+          zoom={polylinePositions.length > 0 ? 12 : 5}
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
@@ -181,30 +194,33 @@ const MapView: React.FC<MapViewProps> = ({ sites, allSites, onOptimize }) => {
           )}
           
           {sites.map((siteTournee, index) => {
-            const site = allSites[siteTournee.id];
-            if (!site) return null;
+            const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+            const site = allSites[originalId];
+            if (!site || !site.latitude || !site.longitude) return null;
             
-            let icon;
-            if (index === 0) {
-              icon = START_ICON;
-            } else if (index === sites.length - 1) {
-              icon = END_ICON;
-            } else {
-              icon = INTERMEDIATE_ICON(index + 1);
-            }
-
+            const position: [number, number] = [site.latitude, site.longitude];
+            const icon = createCustomIcon(mapService.getMarkerColor(index, sites.length), index + 1);
+            
             return (
               <Marker
                 key={siteTournee.id}
-                position={[site.latitude, site.longitude]}
+                position={position}
                 icon={icon}
               >
-                {/* On pourrait ajouter un Popup ici pour afficher plus d'informations */}
+                <Popup>
+                  <div>
+                    <h4 style={{ margin: '0 0 5px 0' }}>{site.nom}</h4>
+                    <p style={{ margin: 0 }}>{site.adresse}<br/>{site.codePostal} {site.ville}</p>
+                    <p style={{ margin: '5px 0 0 0', color: '#666' }}>Étape {index + 1}</p>
+                  </div>
+                </Popup>
               </Marker>
             );
           })}
           
-          <MapBoundsAdjuster coordinates={polylinePositions} />
+          {polylinePositions.length > 0 && (
+            <FitBounds positions={polylinePositions} />
+          )}
         </MapContainer>
       </Box>
     </Paper>

@@ -29,7 +29,7 @@ const SiteItem: React.FC<SiteItemProps> = ({
                 }
             }}
         >
-            {inTour && (
+            {inTour && order && (
                 <Box
                     sx={{
                         position: 'absolute',
@@ -66,27 +66,21 @@ const SiteItem: React.FC<SiteItemProps> = ({
                     </Box>
 
                     <Box>
-                        {inTour ? (
-                            <Tooltip title="Retirer de la tournée">
-                                <IconButton
-                                    color="error"
-                                    size="small"
-                                    onClick={onRemove}
-                                >
-                                    <Delete />
-                                </IconButton>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip title="Ajouter à la tournée">
-                                <IconButton
-                                    color="primary"
-                                    size="small"
-                                    onClick={onAdd}
-                                >
-                                    <Add />
-                                </IconButton>
-                            </Tooltip>
-                        )}
+                        <Tooltip title={inTour ? "Ajouter à nouveau" : "Ajouter à la tournée"}>
+                            <IconButton
+                                color="primary"
+                                size="small"
+                                onClick={onAdd}
+                                sx={{ 
+                                    ...(inTour && {
+                                        bgcolor: 'rgba(25, 118, 210, 0.1)', 
+                                        '&:hover': { bgcolor: 'rgba(25, 118, 210, 0.2)' }
+                                    })
+                                }}
+                            >
+                                <Add />
+                            </IconButton>
+                        </Tooltip>
                     </Box>
                 </Box>
             </CardContent>

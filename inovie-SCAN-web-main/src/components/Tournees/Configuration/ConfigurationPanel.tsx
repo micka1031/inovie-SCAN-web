@@ -1,5 +1,15 @@
 import React from 'react';
-import { TextField, Select, MenuItem, FormControl, InputLabel, Button, Box, Paper, Typography } from '@mui/material';
+import { 
+  TextField, 
+  Select, 
+  MenuItem, 
+  FormControl, 
+  InputLabel, 
+  Button, 
+  Box, 
+  Paper, 
+  Typography
+} from '@mui/material';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import fr from 'date-fns/locale/fr';
@@ -57,6 +67,9 @@ const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             label="Pôle"
             onChange={(e) => setPole(e.target.value)}
           >
+            <MenuItem value="" disabled>
+              <em>Sélectionnez un pôle</em>
+            </MenuItem>
             {poles.map((p) => (
               <MenuItem key={p.id} value={p.id}>
                 {p.nom}
