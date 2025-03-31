@@ -1,0 +1,352 @@
+.navbar-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #0033a0;
+  background-image: linear-gradient(to right, #0033a0, #0047ab);
+  height: 90px;
+  width: 100%;
+  padding: 0 20px;
+  position: relative;
+}
+
+.logo-title-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 60%;
+  justify-content: flex-start;
+}
+
+.logo-title-container img.navbar-logo {
+  height: 80px !important;
+  width: auto !important;
+  max-height: 80px !important;
+  min-height: 80px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  transition: transform 0.3s ease;
+}
+
+.navbar-logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-text {
+  font-size: 24px;
+  color: white;
+  letter-spacing: 2px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  padding-left: 18px;
+  border-left: 4px solid rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  margin-left: 15px;
+}
+
+.user-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 40%;
+  justify-content: flex-end;
+}
+
+.username-icon {
+  margin-right: 5px;
+}
+
+.username {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.nav-menu {
+  display: flex;
+  background-color: #0033a0;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  width: 100%;
+  box-shadow: inset 0 5px 5px -5px rgba(0, 0, 0, 0.2);
+  height: 36px;
+}
+
+.nav-item {
+  color: white;
+  text-decoration: none;
+  padding: 0 20px;
+  font-size: 14px;
+  transition: all 0.3s;
+  position: relative;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 8px;
+}
+
+.nav-item svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.nav-item.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  font-weight: bold;
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: white;
+}
+
+.logout-button {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s;
+  gap: 5px;
+}
+
+.logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.user-menu-container {
+  position: relative;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+  background-color: #ffffff;
+  padding: 8px 15px;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  border: 1px solid #e0e0e0;
+}
+
+.user-info svg {
+  margin-right: 10px;
+  color: #0033a0;
+  width: 20px;
+  height: 20px;
+}
+
+.user-info .user-name {
+  font-weight: 700;
+  color: #222;
+  font-size: 15px;
+}
+
+.user-info .user-role {
+  color: #555;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.menu-button {
+  cursor: pointer;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f2f5 100%);
+  color: #0033a0;
+  padding: 10px 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  outline: none;
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menu-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border-color: rgba(0, 51, 160, 0.2);
+}
+
+.menu-button:hover::before {
+  opacity: 1;
+}
+
+.menu-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.menu-button svg {
+  transition: transform 0.3s ease;
+  stroke: #0033a0;
+}
+
+.menu-button.active svg {
+  transform: rotate(180deg);
+}
+
+@keyframes menuAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  width: 240px;
+  z-index: 1000;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 6px 0;
+  animation: menuAppear 0.2s ease-out;
+  transform-origin: top right;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 18px;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  background: transparent;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  padding-left: 22px;
+  color: #0033a0;
+}
+
+.dropdown-item svg {
+  margin-right: 12px;
+  color: #0033a0;
+  min-width: 18px;
+  height: 18px;
+  opacity: 0.9;
+}
+
+.dropdown-item.logout {
+  color: #dc3545;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.dropdown-item.logout:hover {
+  background-color: #fff5f5;
+}
+
+.dropdown-item.logout svg {
+  color: #dc3545;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 6px 0;
+}
+
+/* Flèche du menu déroulant avec ombre */
+.user-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+  filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.05));
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    height: auto;
+    padding: 10px;
+  }
+  
+  .logo-title-container {
+    margin-bottom: 10px;
+  }
+  
+  .navbar-logo {
+    height: 60px;
+  }
+  
+  .logo-text {
+    font-size: 18px;
+  }
+  
+  .nav-menu {
+    flex-wrap: wrap;
+  }
+  
+  .nav-item {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}

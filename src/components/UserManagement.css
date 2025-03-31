@@ -1,0 +1,963 @@
+/* Styles pour la section d'en-tête */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 20px;
+}
+
+.section-title {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.add-button {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: var(--button-shadow);
+  transition: var(--transition);
+}
+
+.add-button:hover {
+  background-color: var(--primary-dark);
+  transform: scale(1.05);
+}
+
+/* Styles pour le tableau */
+.users-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th, .data-table td {
+  border: 1.5px solid #666666;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #0033a0;
+  color: white;
+  font-weight: bold;
+  border-color: #333333;
+}
+
+.data-table th:nth-child(1), .data-table td:nth-child(1),
+.data-table th:nth-child(2), .data-table td:nth-child(2),
+.data-table th:nth-child(3), .data-table td:nth-child(3),
+.data-table th:nth-child(4), .data-table td:nth-child(4),
+.data-table th:nth-child(5), .data-table td:nth-child(5),
+.data-table th:nth-child(6), .data-table td:nth-child(6) {
+  width: auto !important;
+  max-width: none !important;
+}
+
+.data-table tbody tr:nth-child(even) {
+  background-color: #f4f4f4;
+}
+
+.data-table tbody tr:hover {
+  background-color: #e0e0e0;
+}
+
+.data-table td {
+  font-size: 0.8rem;
+}
+
+/* Styles pour les statuts */
+.livré {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.en-cours {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.en-attente {
+  background-color: var(--light-color);
+  color: var(--primary-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: inline-block;
+}
+
+/* Styles pour les boutons d'action */
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.button-success {
+  background-color: green;
+  color: white;
+}
+
+.button-danger {
+  background-color: red;
+  color: white;
+}
+
+.button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  background-color: var(--gray-light);
+  color: var(--gray-dark);
+  border: 1px solid #ddd;
+}
+
+.button-secondary:hover {
+  background-color: var(--gray-color);
+}
+
+/* Styles pour le modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+/* Styles pour le formulaire */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 51, 160, 0.1);
+}
+
+/* Styles pour le chargement */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid var(--primary-color);
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Styles spécifiques pour le composant UserManagement */
+.user-management-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 150px; /* Espace pour les boutons fixes */
+}
+
+.selected-row {
+  background-color: #e3f2fd !important;
+}
+
+/* Styles du tableau principal avec largeurs fixes */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  table-layout: fixed; /* Fixer la largeur des colonnes */
+}
+
+.data-table th, .data-table td {
+  border: 1.5px solid #666666;
+  padding: 8px;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.data-table th {
+  background-color: #0033a0;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  border-color: #333333;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* Définition des largeurs de colonnes */
+.user-management-table .data-table th:nth-child(1), .user-management-table .data-table td:nth-child(1) { width: 40px; } /* Checkbox */
+.user-management-table .data-table th:nth-child(2), .user-management-table .data-table td:nth-child(2) { width: 150px; } /* Nom */
+.user-management-table .data-table th:nth-child(3), .user-management-table .data-table td:nth-child(3) { width: 180px; } /* Email */
+.user-management-table .data-table th:nth-child(4), .user-management-table .data-table td:nth-child(4) { width: 100px; } /* Identifiant */
+.user-management-table .data-table th:nth-child(5), .user-management-table .data-table td:nth-child(5) { width: 120px; } /* Rôle */
+.user-management-table .data-table th:nth-child(6), .user-management-table .data-table td:nth-child(6) { width: 100px; } /* Pôle */
+.user-management-table .data-table th:nth-child(7), .user-management-table .data-table td:nth-child(7) { width: 100px; } /* Statut */
+.user-management-table .data-table th:nth-child(8), .user-management-table .data-table td:nth-child(8) { width: 150px; } /* ID */
+
+/* Alternance des couleurs de ligne */
+.data-table tbody tr:nth-child(even) {
+  background-color: #f4f4f4;
+}
+
+.data-table tbody tr:hover {
+  background-color: #e0e0e0;
+}
+
+/* Styles pour les champs en mode édition */
+.inline-edit-input,
+.inline-edit-select {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  height: auto;
+  box-sizing: border-box;
+}
+
+.inline-edit-select {
+  height: 32px;
+}
+
+/* Amélioration de l'apparence des champs d'édition au focus */
+.inline-edit-input:focus,
+.inline-edit-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.25), 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  width: auto;
+  min-width: 100%;
+  z-index: 9999 !important; /* Valeur très élevée pour s'assurer qu'il passe devant tout */
+  background-color: white;
+  padding: 8px;
+  border-radius: 4px;
+  transform: translateY(-2px); /* Légère élévation pour effet 3D */
+}
+
+/* Styles spécifiques quand le tableau est en mode édition */
+.data-table.editing td {
+  padding: 5px;
+  position: relative !important;
+  z-index: auto !important; /* Auto pour permettre l'empilement correct */
+}
+
+.data-table.editing tr {
+  height: 45px;
+}
+
+.data-table.editing .inline-edit-input:focus,
+.data-table.editing .inline-edit-select:focus {
+  transform: scale(1.05);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 13px;
+}
+
+/* Styles pour afficher le contenu qui dépasse en mode normal */
+.data-table td:hover {
+  white-space: normal;
+  overflow: visible;
+  z-index: 10;
+  background-color: #f0f8ff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour les nouveaux utilisateurs */
+.new-user-row {
+  background-color: #fff8e1 !important; /* Fond légèrement jaune */
+  animation: highlight 2s ease-in-out;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.7);
+  position: relative;
+}
+
+.new-user-row::before {
+  content: 'Nouveau';
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #ffc107;
+  color: #000;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 0 0 4px 0;
+  font-weight: bold;
+  z-index: 1;
+}
+
+.new-user-row input, 
+.new-user-row select {
+  background-color: #fff;
+  border: 1px solid #ffc107;
+}
+
+/* Animation de surbrillance pour les nouveaux utilisateurs */
+@keyframes highlight {
+  0% { background-color: #ffeb3b; }
+  100% { background-color: #fff8e1; }
+}
+
+/* Bouton pour supprimer une nouvelle ligne */
+.remove-button {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.remove-button:hover {
+  background-color: #ff1744;
+}
+
+/* Styles pour les en-têtes et actions fixes lors du défilement */
+.sticky-header-container {
+  position: fixed;
+  top: 130px;
+  right: 20px;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: none; /* Masquer cette version */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 300px;
+  max-width: 350px;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.edit-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Style pour le texte trop long en mode lecture */
+.data-table:not(.editing) td:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
+  pointer-events: none;
+}
+
+/* Styles pour la pagination */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.items-per-page label {
+  font-size: 14px;
+  color: #333;
+}
+
+.items-per-page select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pagination-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.total-results {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Styles pour les boutons */
+.button {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #f0f0f0;
+  color: #333;
+  white-space: nowrap;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button i {
+  margin-right: 5px;
+}
+
+/* Style pour le conteneur de recherche */
+.quick-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.quick-search-input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 160px;
+  max-width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Styles pour le filtre de pôle */
+.pole-filter {
+  min-width: 120px;
+  max-width: 100%;
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.pole-filter-component {
+  height: 36px;
+}
+
+/* Styles pour la gestion des rôles */
+.role-select-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.role-description {
+  font-size: 0.75rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.role-display {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.role-name {
+  font-weight: bold;
+  color: #0033a0;
+}
+
+.inline-edit-select {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 0.9rem;
+}
+
+.inline-edit-select:focus {
+  outline: none;
+  border-color: #0033a0;
+  box-shadow: 0 0 0 2px rgba(0, 51, 160, 0.1);
+}
+
+/* Style pour les permissions */
+.permissions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.permission-tag {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 12px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  white-space: nowrap;
+}
+
+/* Styles pour les onglets */
+.tabs-container {
+  margin: 20px 0;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0 20px;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab i {
+  font-size: 1.1rem;
+}
+
+.tab:hover {
+  color: #0033a0;
+}
+
+.tab.active {
+  color: #0033a0;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #0033a0;
+}
+
+/* Assurer que les cellules de tableau ont une position relative */
+.data-table.editing td {
+  padding: 5px;
+  position: relative !important;
+  z-index: auto !important; /* Auto pour permettre l'empilement correct */
+}
+
+/* S'assurer que les champs en focus apparaissent devant les autres champs de la même ligne */
+.data-table tr {
+  position: relative;
+}
+
+/* Style pour le bouton de réinitialisation de mot de passe */
+.reset-password-button {
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.reset-password-button:hover {
+  background-color: #f57c00;
+}
+
+.reset-password-button i {
+  margin-right: 5px;
+}
+
+/* Style pour l'affichage du rôle */
+.role-display {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-name {
+  font-weight: 500;
+}
+
+.role-description {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* Style pour l'affichage de l'UID */
+.uid-display {
+  font-family: monospace;
+  font-size: 0.85em;
+  padding: 2px 4px;
+  background-color: #f5f5f5;
+  border-radius: 3px;
+  color: #444;
+}
+
+/* Style pour les résultats de recherche */
+.results-info {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Style pour les groupes de boutons d'action */
+.action-buttons-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 6px;
+  width: 100%;
+}
+
+/* Pour que les boutons prennent moins de place */
+.button {
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+
+@media (max-width: 768px) {
+  .sticky-header-container {
+    position: fixed;
+    width: calc(100% - 40px);
+    top: 100px;
+    right: 20px;
+    flex-direction: column;
+    max-width: none;
+  }
+  
+  .action-buttons-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .quick-search-container {
+    width: 100%;
+  }
+  
+  .button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sticky-header-container {
+    width: calc(100% - 20px);
+    right: 10px;
+    padding: 10px;
+  }
+  
+  .button {
+    min-width: 60px;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .quick-search-input {
+    width: 100%;
+  }
+  
+  .pole-filter {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Style spécifique pour le mode édition */
+.data-table.editing {
+  z-index: 1;
+  position: relative;
+}
+
+.data-table.editing td {
+  background-color: #fcfcfc;
+  z-index: 2;
+}
+
+.data-table.editing .inline-edit-input, 
+.data-table.editing .inline-edit-select {
+  z-index: 5;
+  position: relative;
+}
+
+/* Assurer la visibilité des menus déroulants en édition */
+.inline-edit-select {
+  appearance: menulist;
+  background-image: none;
+}
+
+/* S'assurer que tous les selects sont visibles même avec z-index élevé */
+.data-table.editing select,
+.inline-edit-select {
+  z-index: 10;
+  background-color: white;
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+  min-height: 30px;
+  appearance: menulist !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+}
+
+.editing .inline-edit-select:focus {
+  z-index: 999;
+  box-shadow: 0 0 8px rgba(25, 118, 210, 0.5);
+  border: 1px solid #1976d2;
+}
+
+/* Option alternative pour avoir le sticky header en haut */
+.sticky-header-top {
+  position: sticky;
+  top: 50px; /* Laisser de l'espace pour la navbar */
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 8px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 15px;
+  margin-top: 10px; /* Ajouter un espace en haut */
+}
+
+.sticky-header-top .action-buttons-group {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  margin-right: 15px;
+  background-color: transparent;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sticky-header-top .quick-search-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  flex: 1 1 auto;
+  max-width: 400px;
+  min-width: 0;
+  margin-left: 0;
+}
+
+@media screen and (max-width: 768px) {
+  .sticky-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sticky-header-top .action-buttons-group,
+  .sticky-header-top .quick-search-container {
+    width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+    max-width: none;
+  }
+  
+  .sticky-header-top .quick-search-container {
+    margin-top: 8px;
+  }
+}

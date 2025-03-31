@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialisation des Passages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Initialisation de la Collection Passages</h1>
+    
+    <div class="container">
+        <p>Cette page vous permet d'initialiser la collection "passages" dans Firebase avec des données fictives pour tester la fonctionnalité de recherche.</p>
+        
+        <button id="initButton">Initialiser la Collection Passages</button>
+        
+        <div id="status" style="display: none;"></div>
+    </div>
+    
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, addDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsdd8RpXiOeghZJvBFQQCeZ8G0sQ3JYnE",
+            authDomain: "inovie-suivi-colis.firebaseapp.com",
+            projectId: "inovie-suivi-colis",
+            storageBucket: "inovie-suivi-colis.appspot.com",
+            messagingSenderId: "1095808330134",
+            appId: "1:1095808330134:web:e1c0a0b8d6a4e1a0b4a0b4"
+        };
+        
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Fonction pour convertir une chaîne de date et heure en Timestamp
+        function convertToTimestamp(dateTimeString) {
+            const [datePart, timePart] = dateTimeString.split(' ');
+            const [year, month, day] = datePart.split('-').map(Number);
+            const [hour, minute] = timePart.split(':').map(Number);
+            
+            const date = new Date(year, month - 1, day, hour, minute);
+            return Timestamp.fromDate(date);
+        }
+        
+        // Données initiales pour les passages
+        const initialPassages = [
+            {
+                siteDépart: 'Laboratoire Bonnefoy',
+                dhDépart: convertToTimestamp('2023-02-24 07:25'),
+                idColis: '30072001529',
+                statut: 'Livré',
+                siteFin: 'Clinique SUB',
+                dhLivraison: convertToTimestamp('2023-02-24 08:40'),
+                coursierCharg: 'sebastien.lherlier@novus.fr',
+                coursierLivraison: 'sebastien.lherlier@novus.fr',
+                véhicule: 'GE-695-RT'
+            },
+            {
+                siteDépart: 'Clinique Saint-Jean',
+                dhDépart: convertToTimestamp('2023-02-24 07:15'),
+                idColis: '15000434563',
+                statut: 'Livré',
+                siteFin: 'Laboratoire Central',
+                dhLivraison: convertToTimestamp('2023-02-24 08:10'),
+                coursierCharg: 'sebastien.lherlier@novus.fr',
+                coursierLivraison: 'sebastien.lherlier@novus.fr',
+                véhicule: 'GE-695-RT'
+            },
+            {
+                siteDépart: 'Centre Médical Rangueil',
+                dhDépart: convertToTimestamp('2023-02-24 07:05'),
+                idColis: '15000199845',
+                statut: 'Livré',
+                siteFin: 'Laboratoire Central',
+                dhLivraison: convertToTimestamp('2023-02-24 07:55'),
+                coursierCharg: 'sebastien.lherlier@novus.fr',
+                coursierLivraison: 'sebastien.lherlier@novus.fr',
+                véhicule: 'GE-695-RT'
+            },
+            {
+                siteDépart: 'Laboratoire Lénisole',
+                dhDépart: convertToTimestamp('2023-02-24 07:44'),
+                idColis: 'ASG001570930',
+                statut: 'Livré',
+                siteFin: 'Clinique La Jayre',
+                dhLivraison: convertToTimestamp('2023-02-24 08:15'),
+                coursierCharg: 'guillaume.sage@novus.fr',
+                coursierLivraison: 'guillaume.sage@novus.fr',
+                véhicule: 'GI-456-AD'
+            },
+            {
+                siteDépart: 'Hôpital Fontroide',
+                dhDépart: convertToTimestamp('2023-02-24 07:47'),
+                idColis: 'ASG001524765',
+                statut: 'Livré',
+                siteFin: 'Laboratoire Central',
+                dhLivraison: convertToTimestamp('2023-02-24 08:35'),
+                coursierCharg: 'sebastien.lherlier@novus.fr',
+                coursierLivraison: 'sebastien.lherlier@novus.fr',
+                véhicule: 'GE-695-RT'
+            },
+            {
+                siteDépart: 'Clinique STER',
+                dhDépart: convertToTimestamp('2023-02-24 08:03'),
+                idColis: 'ASG001570783',
+                statut: 'En cours',
+                coursierCharg: 'sebastien.lherlier@novus.fr',
+                véhicule: 'GE-695-RT'
+            },
+            {
+                siteDépart: 'Centre Beau Soleil',
+                dhDépart: convertToTimestamp('2023-02-24 08:16'),
+                idColis: 'MB0004040047',
+                statut: 'En cours',
+                coursierCharg: 'michel.roude@novus.fr',
+                véhicule: 'GL-789-BA'
+            },
+            {
+                siteDépart: 'Laboratoire Purpan',
+                dhDépart: convertToTimestamp('2023-02-24 08:25'),
+                idColis: 'ASG001578924',
+                statut: 'En cours',
+                coursierCharg: 'guillaume.sage@novus.fr',
+                véhicule: 'GI-456-AD'
+            },
+            {
+                siteDépart: 'Clinique Pasteur',
+                dhDépart: convertToTimestamp('2023-02-24 07:10'),
+                idColis: '30072001587',
+                statut: 'Livré',
+                siteFin: 'Laboratoire Central',
+                dhLivraison: convertToTimestamp('2023-02-24 07:55'),
+                coursierCharg: 'jean.dupont@novus.fr',
+                coursierLivraison: 'jean.dupont@novus.fr',
+                véhicule: 'GB-123-AZ'
+            },
+            {
+                siteDépart: 'Cabinet Médical Basso',
+                dhDépart: convertToTimestamp('2023-02-24 08:30'),
+                idColis: 'MB0004042187',
+                statut: 'En cours',
+                coursierCharg: 'michel.roude@novus.fr',
+                véhicule: 'GL-789-BA'
+            }
+        ];
+        
+        // Fonction pour vérifier si une collection existe et contient des données
+        async function collectionHasData(collectionName) {
+            try {
+                const querySnapshot = await getDocs(collection(db, collectionName));
+                return !querySnapshot.empty;
+            } catch (error) {
+                console.error(`Erreur lors de la vérification de la collection ${collectionName}:`, error);
+                return false;
+            }
+        }
+        
+        // Fonction pour initialiser la collection passages
+        async function initializePassagesCollection() {
+            const statusElement = document.getElementById('status');
+            statusElement.style.display = 'block';
+            
+            try {
+                // Vérifier si la collection existe déjà
+                const hasData = await collectionHasData('passages');
+                
+                if (hasData) {
+                    statusElement.className = 'error';
+                    statusElement.innerHTML = 'La collection passages contient déjà des données. Aucune initialisation nécessaire.';
+                    return;
+                }
+                
+                // Initialiser la collection
+                const passagesRef = collection(db, 'passages');
+                let addedCount = 0;
+                
+                for (const passage of initialPassages) {
+                    await addDoc(passagesRef, passage);
+                    addedCount++;
+                }
+                
+                statusElement.className = 'success';
+                statusElement.innerHTML = `Initialisation réussie ! ${addedCount} passages ont été ajoutés à la collection.`;
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation de la collection passages:', error);
+                statusElement.className = 'error';
+                statusElement.innerHTML = `Erreur lors de l'initialisation: ${error.message}`;
+            }
+        }
+        
+        // Ajouter un écouteur d'événements au bouton
+        document.getElementById('initButton').addEventListener('click', initializePassagesCollection);
+    </script>
+</body>
+</html>

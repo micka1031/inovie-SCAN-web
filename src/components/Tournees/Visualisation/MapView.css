@@ -1,0 +1,80 @@
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  min-height: 500px;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+/* Style personnalisé pour les popups */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  padding: 12px;
+  min-width: 200px;
+}
+
+.leaflet-popup-tip {
+  background-color: #fff;
+}
+
+/* Animation pour les marqueurs */
+@keyframes pulsate {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.highlighted-marker {
+  animation: pulsate 1.5s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .map-container {
+    min-height: 350px;
+  }
+}
+
+.custom-marker-label {
+  color: white;
+  font-weight: bold;
+  text-align: center;
+}
+
+.google-map-info-window {
+  padding: 8px;
+  max-width: 300px;
+}
+
+.google-map-info-window h4 {
+  margin: 0 0 8px 0;
+  color: #1976D2;
+}
+
+.google-map-info-window p {
+  margin: 4px 0;
+} 

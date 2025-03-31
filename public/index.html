@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Application de suivi de colis Inovie" />
+    <meta name="theme-color" content="#0033a0" />
+    
+    <!-- Préchargement des ressources critiques -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Chargement asynchrone des styles non critiques -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    
+    <!-- Fallback pour les navigateurs qui ne supportent pas onload -->
+    <noscript>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    </noscript>
+    
+    <title>inovie SCAN</title>
+    
+    <!-- Chargement synchrone et direct de Google Maps avec débogage détaillé -->
+    <script>
+      console.log('[GOOGLE MAPS] Initialisation du chargement');
+      
+      // Variable globale pour suivre l'état de chargement
+      window.__googleMapsInitialized = false;
+      
+      // Fonction de callback une fois l'API chargée
+      window.initGoogleMaps = function() {
+        console.log('[GOOGLE MAPS] API chargée avec succès - Callback initGoogleMaps appelé');
+        window.__googleMapsInitialized = true;
+        
+        // Dispatcher un événement pour informer l'application que Google Maps est prêt
+        const event = new Event('google-maps-initialized');
+        console.log('[GOOGLE MAPS] Envoi de l\'événement google-maps-initialized');
+        document.dispatchEvent(event);
+        
+        // Vérifier que la bibliothèque Places est disponible
+        setTimeout(() => {
+          console.log('[GOOGLE MAPS] État après 1 seconde:', {
+            googleMapsInitialized: window.__googleMapsInitialized,
+            googleObject: !!window.google,
+            googleMapsObject: !!(window.google && window.google.maps),
+            placesApiAvailable: !!(window.google && window.google.maps && window.google.maps.places),
+            mapTypes: window.google && window.google.maps ? Object.keys(window.google.maps.MapTypeId) : 'Non disponible'
+          });
+        }, 1000);
+      };
+      
+      // Fonction d'erreur en cas de problème de chargement
+      window.googleMapsError = function() {
+        console.error('[GOOGLE MAPS] Erreur lors du chargement de l\'API Google Maps');
+        alert('Erreur lors du chargement de Google Maps. Veuillez rafraîchir la page.');
+      };
+      
+      // Charger l'API Google Maps directement via document.write pour garantir la disponibilité
+      document.write('<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBjkPBFOhFOOmYJUzz1Fpa4sz4sG7t6XGE&callback=initGoogleMaps&libraries=places,geometry&v=weekly" onerror="googleMapsError()"><\/script>');
+      
+      console.log('[GOOGLE MAPS] Script injecté dans le document');
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- Script pour vérifier l'état de Google Maps après le chargement complet de la page -->
+    <script>
+      window.addEventListener('load', function() {
+        console.log('[GOOGLE MAPS] État après chargement de la page:', {
+          googleMapsInitialized: window.__googleMapsInitialized,
+          googleObject: !!window.google,
+          googleMapsObject: !!(window.google && window.google.maps)
+        });
+      });
+    </script>
+  </body>
+</html> 

@@ -1,0 +1,360 @@
+.tournees-container {
+  padding: 2rem;
+}
+
+.tournees-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.tournees-header h1 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 2rem;
+}
+
+.new-tournee-button {
+  background-color: #2563eb;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.new-tournee-button:hover {
+  background-color: #1d4ed8;
+}
+
+.tournees-actions {
+  margin-bottom: 2rem;
+}
+
+.action-button {
+  display: inline-block;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.action-button:hover {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.tournees-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tournees-content p {
+  margin: 0 0 1rem 0;
+  color: #4b5563;
+}
+
+.tournees-content ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #4b5563;
+}
+
+.tournees-content li {
+  margin-bottom: 0.5rem;
+}
+
+/* Correction des problèmes d'affichage des DatePicker */
+.tournees-table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Styles pour la table des tournées */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table th, .data-table td {
+  border: 1.5px solid #666666;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #0033a0;
+  color: white;
+  font-weight: bold;
+  border-color: #333333;
+}
+
+.data-table th:nth-child(1), .data-table td:nth-child(1) { width: 50px; } /* ID */
+.data-table th:nth-child(2), .data-table td:nth-child(2) { width: 100px; } /* Nom */
+.data-table th:nth-child(3), .data-table td:nth-child(3) { width: 80px; } /* Date */
+.data-table th:nth-child(4), .data-table td:nth-child(4) { width: 80px; } /* Heure Départ */
+.data-table th:nth-child(5), .data-table td:nth-child(5) { width: 80px; } /* Heure Fin Prévue */
+.data-table th:nth-child(6), .data-table td:nth-child(6) { width: 80px; } /* Heure Fin Réelle */
+.data-table th:nth-child(7), .data-table td:nth-child(7) { width: 150px; } /* Coursier */
+.data-table th:nth-child(8), .data-table td:nth-child(8) { width: 80px; } /* Véhicule */
+.data-table th:nth-child(9), .data-table td:nth-child(9) { width: 50px; } /* Nb Colis */
+.data-table th:nth-child(10), .data-table td:nth-child(10) { width: 5%; } /* Actions */
+
+.data-table tbody tr:nth-child(even) {
+  background-color: #f4f4f4;
+}
+
+.data-table tbody tr:hover {
+  background-color: #e0e0e0;
+}
+
+/* Styles pour les DatePicker */
+.react-datepicker-wrapper {
+  display: block;
+  width: 100%;
+  position: static;
+}
+
+.react-datepicker-popper {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+.datepicker-popper {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+/* Styles pour s'assurer que les DatePicker sont visibles */
+.inline-edit-input,
+.form-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Amélioration de l'apparence des champs d'édition au focus */
+.inline-edit-input:focus,
+.inline-edit-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.25), 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  width: auto;
+  min-width: 100%;
+  z-index: 9999 !important; /* Valeur très élevée pour s'assurer qu'il passe devant tout */
+  background-color: white;
+  padding: 8px;
+  border-radius: 4px;
+  transform: translateY(-2px); /* Légère élévation pour effet 3D */
+}
+
+/* Styles spécifiques quand le tableau est en mode édition */
+.data-table.editing td {
+  padding: 5px;
+  position: relative !important;
+  z-index: auto !important; /* Auto pour permettre l'empilement correct */
+}
+
+/* Assurer que les conteneurs des DatePicker sont visibles */
+.react-datepicker__tab-loop {
+  position: absolute;
+  z-index: 9999;
+}
+
+/* Styles pour les DatePicker (repris de Passages) */
+.custom-datepicker-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.custom-datepicker-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  cursor: pointer;
+  background-color: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.custom-datepicker-input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.custom-datepicker-input::placeholder {
+  color: #aaa;
+}
+
+.custom-datepicker-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
+  pointer-events: none;
+}
+
+/* Styles pour les DatePicker */
+.react-datepicker {
+  font-family: 'Roboto', sans-serif;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+  z-index: 9999;
+}
+
+.react-datepicker__header {
+  background-color: #1976d2;
+  border-bottom: none;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 10px;
+}
+
+.react-datepicker__current-month {
+  color: white;
+  font-weight: 500;
+  font-size: 1rem;
+  padding-bottom: 5px;
+}
+
+.react-datepicker__day-name {
+  color: white;
+  font-weight: 500;
+}
+
+.react-datepicker__day--selected {
+  background-color: #1976d2;
+  border-radius: 50%;
+}
+
+.react-datepicker__day:hover {
+  background-color: #e8f0fe;
+  border-radius: 50%;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: #e8f0fe;
+  color: #1976d2;
+  border-radius: 50%;
+}
+
+.react-datepicker__navigation {
+  top: 12px;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: white;
+}
+
+.react-datepicker__day--today {
+  font-weight: bold;
+  color: #1976d2;
+}
+
+/* Styles pour les en-têtes et actions fixes lors du défilement */
+.sticky-header-container {
+  position: fixed;
+  top: 150px;
+  right: 20px;
+  z-index: 100;
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: auto;
+  max-width: 600px;
+}
+
+/* Animation de surbrillance pour les DatePicker */
+.react-datepicker:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour les nouvelles tournées */
+.new-tournee-row {
+  background-color: #fff8e1 !important; /* Fond légèrement jaune */
+  animation: highlight 2s ease-in-out;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.7);
+  position: relative;
+}
+
+.new-tournee-row::before {
+  content: 'Nouvelle';
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #ffc107;
+  color: #000;
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 0 0 4px 0;
+  font-weight: bold;
+  z-index: 1;
+}
+
+.new-tournee-row input, 
+.new-tournee-row select {
+  background-color: #fff;
+  border: 1px solid #ffc107;
+}
+
+/* Animation de surbrillance pour les nouvelles tournées */
+@keyframes highlight {
+  0% { background-color: #ffeb3b; }
+  100% { background-color: #fff8e1; }
+}
+
+.quick-search-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  margin-bottom: 10px;
+  max-width: 800px;
+}
+
+.quick-search-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  height: 30px;
+}
+
+.pole-filter {
+  width: 180px;
+  min-width: 180px;
+}
+
+.pole-filter .MuiInputBase-root {
+  height: 30px;
+}
+
+.pole-filter .MuiSelect-select {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.pole-filter-component {
+  width: 100%;
+}

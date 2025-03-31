@@ -1,0 +1,1786 @@
+.map-view-container {
+  padding: 20px;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+}
+
+.map-view-container h1 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.map-container {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.map-wrapper {
+  position: relative;
+  flex-grow: 1;
+  min-height: 500px;
+  border: 1px solid #ddd;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.google-map {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/* Forcer l'affichage des contrôles Google Maps */
+.gm-style {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+/* Assurez-vous que les contrôles de zoom sont visibles */
+.gm-style .gm-style-mtc, 
+.gm-style .gm-style-cc, 
+.gm-style .gmnoprint {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Style du conteneur de chargement */
+.loading-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+/* Style de l'animation de chargement */
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #3498db;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.map-error {
+  color: red;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid red;
+  margin: 20px;
+}
+
+.map-error p {
+  margin-bottom: 15px;
+  color: #d32f2f;
+  font-weight: bold;
+}
+
+.map-error button {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.map-error button:hover {
+  background-color: #1565c0;
+}
+
+.map-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  max-width: 300px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+/* Style pour le mode plein écran */
+:fullscreen .map-container {
+  border-radius: 0;
+  margin-bottom: 0;
+  height: 100vh !important;
+}
+
+:fullscreen .map-actions {
+  display: none;
+}
+
+:fullscreen .courier-list {
+  display: none;
+}
+
+/* Pour Firefox */
+:-moz-full-screen .map-container {
+  border-radius: 0;
+  margin-bottom: 0;
+  height: 100vh !important;
+}
+
+:-moz-full-screen .map-actions {
+  display: none;
+}
+
+:-moz-full-screen .courier-list {
+  display: none;
+}
+
+/* Pour WebKit */
+:-webkit-full-screen .map-container {
+  border-radius: 0;
+  margin-bottom: 0;
+  height: 100vh !important;
+}
+
+:-webkit-full-screen .map-actions {
+  display: none;
+}
+
+:-webkit-full-screen .courier-list {
+  display: none;
+}
+
+.courier-list {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.courier-list h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
+}
+
+.courier-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.courier-item {
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: #f5f5f5;
+  border-left: 4px solid #2196F3;
+}
+
+.courier-item.courier-arrival {
+  border-left: 4px solid #4CAF50;
+  background-color: #E8F5E9;
+}
+
+.courier-item.courier-departure {
+  border-left: 4px solid #2196F3;
+  background-color: #E3F2FD;
+}
+
+.courier-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.courier-details {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #666;
+}
+
+.courier-details span {
+  margin-bottom: 3px;
+}
+
+.courier-status {
+  font-weight: bold;
+}
+
+.courier-item.courier-arrival .courier-status {
+  color: #4CAF50;
+}
+
+.courier-item.courier-departure .courier-status {
+  color: #2196F3;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #d32f2f;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.info-message {
+  background-color: #e8f4fd;
+  color: #0277bd;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.info-message::before {
+  content: 'ℹ️';
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.text-button {
+  background: none;
+  border: none;
+  color: #2196F3;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 5px;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.text-button:hover {
+  color: #0D47A1;
+}
+
+.text-button:disabled {
+  color: #90CAF9;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Styles pour les marqueurs Leaflet */
+.leaflet-popup-content {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.leaflet-popup-content b {
+  color: #2196F3;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-view-container {
+    height: auto;
+  }
+  
+  .map-container {
+    flex-direction: column;
+  }
+  
+  .map-wrapper {
+    margin-left: 0;
+  }
+  
+  .map-legend {
+    position: static;
+    margin-top: 10px;
+    max-width: 100%;
+  }
+}
+
+.geocoding-status {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.geocoding-status::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #1976d2;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-right: 10px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.map-action-button {
+  padding: 8px 12px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.map-action-button:hover {
+  background-color: #3367d6;
+}
+
+.map-action-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.map-action-button i {
+  font-size: 16px;
+}
+
+.geocode-button {
+  background-color: #4CAF50;
+}
+
+.geocode-button:hover {
+  background-color: #388E3C;
+}
+
+.geocode-button:disabled {
+  background-color: #A5D6A7;
+}
+
+.action-button.fullscreen-button {
+  font-weight: 500;
+}
+
+/* Styles pour les contrôles de la carte */
+/* Suppression des styles qui positionnent les contrôles en mode normal */
+
+/* Styles pour le bouton plein écran de Leaflet */
+.leaflet-control-fullscreen {
+  background-color: white;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 24px !important;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.leaflet-control-fullscreen:hover {
+  background-color: #f4f4f4;
+}
+
+/* Styles pour le mode plein écran */
+:fullscreen .leaflet-control-container,
+:-moz-full-screen .leaflet-control-container,
+:-webkit-full-screen .leaflet-control-container {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 1001 !important;
+}
+
+:fullscreen .leaflet-control-zoom,
+:-moz-full-screen .leaflet-control-zoom,
+:-webkit-full-screen .leaflet-control-zoom {
+  margin-top: 10px !important;
+}
+
+:fullscreen .leaflet-control-fullscreen,
+:-moz-full-screen .leaflet-control-fullscreen,
+:-webkit-full-screen .leaflet-control-fullscreen {
+  margin-bottom: 10px !important;
+}
+
+/* Styles pour le LayersControl */
+.leaflet-control-layers {
+  background-color: white;
+  border-radius: 5px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  padding: 6px 10px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.leaflet-control-layers-expanded {
+  padding: 6px 10px 6px 6px;
+  min-width: 200px;
+}
+
+.leaflet-control-layers-selector {
+  margin-right: 5px;
+}
+
+.leaflet-control-layers-list {
+  margin-bottom: 0;
+}
+
+.leaflet-control-layers-base label,
+.leaflet-control-layers-overlays label {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+/* Style pour les séparateurs dans le contrôle de couches */
+.leaflet-control-layers-overlays span:first-child {
+  font-weight: normal;
+}
+
+/* Style pour les titres de section */
+.leaflet-control-layers-overlays span[title^="---"] {
+  margin-top: 10px;
+  border-top: 1px solid #ddd;
+  padding-top: 5px;
+  font-weight: bold;
+  color: #666;
+  pointer-events: none;
+}
+
+.leaflet-control-layers-separator {
+  height: 0;
+  border-top: 1px solid #ddd;
+  margin: 5px 0;
+}
+
+.site-type-filters {
+  display: none;
+}
+
+.filter-header {
+  display: none;
+}
+
+.filter-actions {
+  display: none;
+}
+
+.filter-button {
+  display: none;
+}
+
+.filter-options {
+  max-height: 150px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.filter-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filter-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.filter-options::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.filter-option input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.filter-option label {
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Style pour le compteur de sites */
+.site-stats {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: #333;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.site-stats strong {
+  color: #2980b9;
+}
+
+/* Style pour mettre en évidence le pourcentage */
+.site-stats .percentage {
+  font-weight: bold;
+  color: #2980b9;
+  margin: 0 3px;
+}
+
+.site-stats .percentage.low {
+  color: #e74c3c;
+}
+
+.site-stats .percentage.medium {
+  color: #f39c12;
+}
+
+.site-stats .percentage.high {
+  color: #27ae60;
+}
+
+/* Styles pour les icônes des sites */
+.site-icon {
+  filter: brightness(0) invert(1);
+}
+
+/* Styles pour les marqueurs personnalisés */
+.site-icon[style*="color"] {
+  filter: none !important;
+  color: inherit !important;
+}
+
+/* Styles pour les icônes personnalisées */
+.site-icon-custom {
+  filter: none !important;
+}
+
+/* Suppression des background-color et utilisation de filtres pour colorer les icônes */
+.site-icon-laboratoire {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.4) sepia(1) saturate(5) hue-rotate(0deg);
+}
+
+.site-icon-clinique {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(30deg);
+}
+
+.site-icon-plateau {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(100deg);
+}
+
+.site-icon-collecte {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(150deg);
+}
+
+.site-icon-etablissement {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.5) sepia(1) saturate(5) hue-rotate(200deg);
+}
+
+.site-icon-ehpad {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.5) sepia(1) saturate(5) hue-rotate(270deg);
+}
+
+.site-icon-veterinaire {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.4) sepia(1) saturate(5) hue-rotate(320deg);
+}
+
+/* Styles pour les marqueurs Leaflet */
+.leaflet-marker-icon {
+  filter: none !important;
+}
+
+/* Styles pour les marqueurs personnalisés */
+.leaflet-marker-icon.site-icon[style*="color"] {
+  color: inherit !important;
+  filter: none !important;
+}
+
+/* Styles pour les marqueurs personnalisés */
+.leaflet-marker-icon.site-icon-custom {
+  filter: none !important;
+}
+
+/* Utilisation de filtres pour colorer les icônes Leaflet */
+.leaflet-marker-icon.site-icon-laboratoire {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.4) sepia(1) saturate(5) hue-rotate(0deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-clinique {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(30deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-plateau {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(100deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-collecte {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.8) sepia(1) saturate(5) hue-rotate(150deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-etablissement {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.5) sepia(1) saturate(5) hue-rotate(200deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-ehpad {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.5) sepia(1) saturate(5) hue-rotate(270deg) !important;
+}
+
+.leaflet-marker-icon.site-icon-veterinaire {
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5)) brightness(0) invert(0.4) sepia(1) saturate(5) hue-rotate(320deg) !important;
+}
+
+/* Légende pour les types de sites */
+.site-legend {
+  background-color: white;
+  padding: 10px;
+  border-radius: 5px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  margin-bottom: 10px;
+}
+
+.site-legend h4 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+}
+
+.site-legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 12px;
+}
+
+.site-legend-color {
+  width: 16px;
+  height: 16px;
+  margin-right: 5px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.site-legend-color-laboratoire {
+  background-color: #ff3b30;
+}
+
+.site-legend-color-clinique {
+  background-color: #ffcc00;
+}
+
+.site-legend-color-plateau {
+  background-color: #34c759;
+}
+
+.site-legend-color-collecte {
+  background-color: #00c7be;
+}
+
+.site-legend-color-etablissement {
+  background-color: #007aff;
+}
+
+.site-legend-color-ehpad {
+  background-color: #af52de;
+}
+
+.site-legend-color-veterinaire {
+  background-color: #ff2d55;
+}
+
+/* Style pour les marqueurs avec coordonnées générées */
+.generated-coordinates-marker {
+  opacity: 0.6;
+  border: 2px dashed red !important;
+}
+
+/* Style pour le message d'information sur les coordonnées générées */
+.coordinates-info {
+  background-color: rgba(255, 255, 200, 0.9);
+  border: 1px solid #e0e0a0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.coordinates-info strong {
+  color: #d35400;
+}
+
+/* Style pour les séparateurs dans le contrôle de couches */
+.layer-section-header {
+  margin-top: 10px !important;
+  border-top: 1px solid #ddd !important;
+  padding-top: 5px !important;
+  font-weight: bold !important;
+  color: #666 !important;
+  pointer-events: none !important;
+  cursor: default !important;
+}
+
+.layer-section-header span {
+  font-weight: bold !important;
+  color: #666 !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+}
+
+/* Ajout d'un indicateur dans la légende pour les sites avec coordonnées générées */
+.site-legend-item.generated {
+  margin-top: 10px;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+}
+
+/* Styles pour les icônes personnalisées */
+.custom-div-icon {
+  background: none;
+  border: none;
+}
+
+.custom-div-icon div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.custom-div-icon div:hover {
+  transform: scale(1.2);
+}
+
+.custom-div-icon i {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Styles pour les libellés des marqueurs */
+.map-marker-label {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  z-index: 2000;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  min-width: 50px;
+  text-align: center;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  transition: opacity 0.2s ease-out;
+}
+
+/* Styles pour les contrôles personnalisés */
+.map-custom-controls {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+}
+
+.leaflet-control-labels,
+.leaflet-control-filters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: #333;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.leaflet-control-labels:hover,
+.leaflet-control-filters:hover {
+  background-color: #f4f4f4;
+}
+
+.leaflet-control-labels.active,
+.leaflet-control-filters.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.map-filters-container {
+  width: 250px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.map-filter-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.map-filter-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.map-filter-option input {
+  margin-right: 8px;
+}
+
+.map-filter-option label {
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+}
+
+.map-filter-search {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.map-filter-search-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.map-filter-search-input:focus {
+  border-color: #1976d2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+/* Styles pour les résultats de recherche */
+.map-search-results {
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+}
+
+.map-search-no-results {
+  padding: 10px;
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  font-size: 12px;
+}
+
+.map-search-result-item {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.map-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.map-search-result-item:hover {
+  background-color: #f5f5f5;
+}
+
+.map-search-result-name {
+  font-weight: bold;
+  font-size: 13px;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.map-search-result-details {
+  font-size: 11px;
+  color: #666;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.map-search-result-details span {
+  margin-right: 8px;
+}
+
+/* Effet de pulsation pour le marqueur temporaire */
+.temp-marker {
+  background: none;
+  border: none;
+}
+
+.pulse {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(25, 118, 210, 0.6);
+  box-shadow: 0 0 0 rgba(25, 118, 210, 0.4);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(25, 118, 210, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+}
+
+/* Styles pour les clusters */
+.marker-cluster {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(25, 118, 210, 0.6);
+  border-radius: 50%;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #1976d2;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.marker-cluster:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(25, 118, 210, 0.8);
+}
+
+.marker-cluster div {
+  width: 34px !important;
+  height: 34px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent !important;
+  color: #1976d2 !important;
+  font-weight: bold !important;
+}
+
+/* Styles pour les clusters de différentes tailles */
+.marker-cluster-small {
+  background-color: rgba(181, 226, 255, 0.8);
+}
+
+.marker-cluster-medium {
+  background-color: rgba(115, 192, 255, 0.8);
+}
+
+.marker-cluster-large {
+  background-color: rgba(66, 165, 245, 0.8);
+}
+
+/* Styles pour le mode araignée */
+.leaflet-marker-icon.leaflet-marker-icon-spider {
+  transition: all 0.3s ease;
+}
+
+/* Styles pour la zone de couverture du cluster */
+.marker-cluster-bounds {
+  border: 2px dashed rgba(25, 118, 210, 0.5);
+  border-radius: 8px;
+  background-color: rgba(25, 118, 210, 0.05);
+  transition: all 0.3s ease;
+}
+
+/* Styles pour le composant de correction des coordonnées */
+.correction-control {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+}
+
+.correction-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #333;
+  text-decoration: none;
+}
+
+.correction-button:hover {
+  background-color: #f4f4f4;
+}
+
+.correction-panel {
+  padding: 10px;
+  width: 250px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.correction-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.correction-search {
+  margin-bottom: 10px;
+}
+
+.correction-search-input {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.correction-results {
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.correction-result-item {
+  padding: 5px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.correction-result-item:hover {
+  background-color: #f4f4f4;
+}
+
+.correction-result-item:last-child {
+  border-bottom: none;
+}
+
+.correction-selected {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+}
+
+.correction-site-info {
+  margin-bottom: 10px;
+}
+
+.correction-instructions {
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.correction-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.correction-save-button,
+.correction-cancel-button,
+.correction-close-button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.correction-save-button {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.correction-cancel-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.correction-close-button {
+  background-color: #ccc;
+  color: #333;
+  width: 100%;
+}
+
+/* Marqueur de correction */
+.correction-marker {
+  z-index: 1000 !important;
+}
+
+.map-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  z-index: 10;
+}
+
+.search-box {
+  flex-grow: 1;
+  max-width: 300px;
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.search-result-item {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.search-result-item:hover {
+  background-color: #f5f5f5;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.type-filter, .pole-filter {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #e0e0e0;
+}
+
+.filter-chip.active {
+  background-color: #1976D2;
+  color: white;
+}
+
+/* Styles pour les marqueurs Google */
+.google-marker {
+  cursor: pointer;
+}
+
+.marker-label {
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+/* Couleurs pour les différents types de sites */
+.site-icon-laboratoire {
+  background-color: #FF5252 !important;
+}
+
+.site-icon-clinique {
+  background-color: #2196F3 !important;
+}
+
+.site-icon-plateau {
+  background-color: #9C27B0 !important;
+}
+
+.site-icon-collecte {
+  background-color: #4CAF50 !important;
+}
+
+.site-icon-etablissement {
+  background-color: #FF9800 !important;
+}
+
+.site-icon-ehpad {
+  background-color: #795548 !important;
+}
+
+.site-icon-veterinaire {
+  background-color: #607D8B !important;
+}
+
+/* Styles pour la légende */
+.map-legend {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  max-width: 250px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.map-legend h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.map-legend h4 {
+  margin: 8px 0 5px;
+  font-size: 12px;
+  color: #666;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.legend-item span {
+  font-size: 13px;
+  color: #333;
+}
+
+/* Styles pour les InfoWindows Google */
+.gm-style .gm-style-iw {
+  padding: 10px;
+}
+
+.gm-style .gm-style-iw-c {
+  border-radius: 8px;
+}
+
+.site-info-content h3 {
+  margin: 0 0 8px 0;
+  color: #1976D2;
+}
+
+.site-info-content p {
+  margin: 4px 0;
+}
+
+.site-info-content .warning {
+  color: #F44336;
+  font-weight: bold;
+}
+
+/* Animation pour les marqueurs */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animated-marker {
+  animation: pulse 1.5s infinite;
+}
+
+/* Styles pour les filtres et la légende */
+.map-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.filter-section {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-section h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-option input[type="checkbox"] {
+  margin: 0;
+}
+
+.filter-option label {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Styles pour la boîte de recherche */
+.search-box {
+  position: relative;
+  width: 100%;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+}
+
+.clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  padding: 0;
+  font-size: 16px;
+}
+
+.clear-search:hover {
+  color: #333;
+}
+
+/* Media query pour petits écrans */
+@media (max-width: 768px) {
+  .map-filters {
+    flex-direction: column;
+  }
+  
+  .map-legend {
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    max-width: none;
+  }
+}
+
+.filter-buttons {
+  display: flex;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.filter-all-button {
+  padding: 4px 8px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.filter-all-button:hover {
+  background-color: #e0e0e0;
+  border-color: #ccc;
+}
+
+/* Styles pour les nouveaux marqueurs personnalisés */
+.custom-marker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+.marker-label {
+  z-index: 1;
+  text-align: center;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+/* Animations pour les marqueurs lors du survol */
+.custom-marker:hover {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+  z-index: 2;
+}
+
+/* Style pour différentes formes de marqueurs */
+.custom-marker.square {
+  border-radius: 0;
+}
+
+.custom-marker.triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.custom-marker.star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
+.custom-marker.droplet {
+  clip-path: polygon(50% 0%, 80% 50%, 80% 80%, 50% 100%, 20% 80%, 20% 50%);
+}
+
+.filter-section {
+  margin-bottom: 15px;
+}
+
+.filter-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 5px;
+}
+
+.filter-options {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+}
+
+.filter-option input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filter-all-button {
+  padding: 3px 8px;
+  font-size: 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.filter-all-button:hover {
+  background-color: #e0e0e0;
+}
+
+.search-box {
+  position: relative;
+  margin-top: 8px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.clear-search {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #999;
+}
+
+.clear-search:hover {
+  color: #666;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.legend-color {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid #fff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+.legend-types, .legend-poles {
+  margin-bottom: 10px;
+}
+
+.legend-types h4, .legend-poles h4 {
+  margin: 0 0 5px 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.site-info-content {
+  padding: 5px;
+  max-width: 300px;
+}
+
+.site-info-content h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.site-info-content p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.warning {
+  color: #f44336;
+  font-weight: bold;
+}
+
+.info-window {
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.info-window h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.info-window p {
+  margin: 5px 0;
+  font-size: 13px;
+}
+
+.map-marker-label {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  z-index: 2000;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  min-width: 50px;
+  text-align: center;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  transition: opacity 0.2s ease-out;
+}
+
+.info-window {
+  padding: 5px;
+}
+
+.info-window h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.info-window p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #666;
+}
+
+.info-window p strong {
+  color: #333;
+}
+
+.filter-section {
+  margin-bottom: 10px;
+}
+
+.filter-section h3 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.filter-buttons {
+  margin-bottom: 5px;
+}
+
+.filter-buttons button {
+  padding: 2px 8px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.filter-buttons button:hover {
+  background-color: #e0e0e0;
+}
+
+.filter-options {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  padding: 5px;
+  border-radius: 3px;
+  background-color: #f9f9f9;
+}
+
+.filter-option {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.filter-option input {
+  margin-right: 5px;
+}
+
+.filter-option label {
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Style pour la section de chargement */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #2196F3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Style pour le bouton de rafraîchissement du cache */
+.refresh-cache-button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 100;
+  transition: background-color 0.2s ease;
+}
+
+.refresh-cache-button:hover {
+  background-color: #e8e8e8;
+} 

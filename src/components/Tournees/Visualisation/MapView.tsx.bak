@@ -1,0 +1,404 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Box, Paper, Typography, Button, CircularProgress } from '@mui/material';
+import { Autorenew } from '@mui/icons-material';
+import { Site, SiteTournee } from '../../../types/tournees.types';
+import { mapService } from '../../../services/mapService';
+import './MapView.css';
+
+// Composant d'encapsulation pour Google Maps
+const GoogleMapComponent: React.FC<{
+  children: React.ReactNode;
+  onMapLoad: (map: google.maps.Map) => void;
+  center: { lat: number; lng: number };
+  zoom: number;
+}> = ({ children, onMapLoad, center, zoom }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+
+  useEffect(() => {
+    // Charger l'API Google Maps
+    const loadGoogleMaps = async () => {
+      try {
+        await mapService.loadGoogleMapsAPI();
+        
+        if (mapRef.current && !mapInstanceRef.current) {
+          // Créer une nouvelle instance de carte
+          const mapOptions: google.maps.MapOptions = {
+            center,
+            zoom,
+            mapTypeId: google.maps.MapTypeId.ROADMAP,
+            mapTypeControl: true,
+            streetViewControl: false,
+            fullscreenControl: true,
+            zoomControl: true,
+          };
+          
+          const map = new google.maps.Map(mapRef.current, mapOptions);
+          
+          // Activer la couche de trafic en temps réel
+          const trafficLayer = new google.maps.TrafficLayer();
+          trafficLayer.setMap(map);
+          
+          mapInstanceRef.current = map;
+          
+          // Appeler le callback avec l'instance de la carte
+          onMapLoad(map);
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement de Google Maps:', error);
+      }
+    };
+
+    loadGoogleMaps();
+  }, [center, zoom, onMapLoad]);
+
+  return (
+    <div ref={mapRef} style={{ width: '100%', height: '100%' }}>
+      {/* Le contenu sera ajouté via l'API Google Maps */}
+    </div>
+  );
+};
+
+// Interface pour un marqueur Google Maps
+interface GoogleMapMarker {
+  marker: google.maps.Marker;
+  siteIndex: number;
+  siteTournee: SiteTournee;
+}
+
+interface MapViewProps {
+  sites: SiteTournee[];
+  allSites: { [key: string]: Site };
+  onOptimize: (newOrder: string[]) => void;
+}
+
+// Obtenir l'ID du site original à partir de l'ID unique
+const getOriginalSiteId = (uniqueId: string): string => {
+  return uniqueId.includes('_') ? uniqueId.split('_')[0] : uniqueId;
+};
+
+const MapView: React.FC<MapViewProps> = ({ sites, allSites, onOptimize }) => {
+  const [optimizationLoading, setOptimizationLoading] = useState(false);
+  const [routeInfo, setRouteInfo] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Référence à la carte Google Maps
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  
+  // Référence aux marqueurs
+  const markersRef = useRef<GoogleMapMarker[]>([]);
+  
+  // Référence aux polylines
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
+  
+  // Calculer le centre de la carte
+  const mapCenter = React.useMemo(() => {
+    if (sites.length === 0) {
+      // Centre par défaut (France)
+      return { lat: 46.227638, lng: 2.213749 };
+    }
+    
+    // Trouver le premier site avec des coordonnées valides
+    for (const siteTournee of sites) {
+      const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+      const site = allSites[originalId];
+      if (site && site.latitude && site.longitude) {
+        return { lat: site.latitude, lng: site.longitude };
+      }
+    }
+    
+    // Centre par défaut si aucun site valide
+    return { lat: 46.227638, lng: 2.213749 };
+  }, [sites, allSites]);
+  
+  // Fonction pour créer une icône personnalisée
+  const createMarkerIcon = useCallback((index: number, isFirst: boolean, isLast: boolean) => {
+    // Déterminer la couleur en fonction de la position
+    let color = '#1976D2'; // Bleu par défaut pour les sites intermédiaires
+    if (isFirst) color = '#00796B'; // Vert pour le premier site
+    if (isLast) color = '#D32F2F';  // Rouge pour le dernier site
+    
+    // URL d'une image de marqueur avec la couleur spécifiée ou
+    // utiliser un SVG personnalisé
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillColor: color,
+      fillOpacity: 1,
+      strokeColor: '#FFFFFF',
+      strokeWeight: 2,
+      scale: 12,
+      labelOrigin: new google.maps.Point(0, 0)
+    };
+  }, []);
+  
+  // Calculer les infos d'itinéraire
+  useEffect(() => {
+    if (sites.length < 2) return;
+    
+    const sitesWithData = sites.map(site => {
+      const originalId = site.siteId || getOriginalSiteId(site.id);
+      return {
+        ...site,
+        site: allSites[originalId]
+      };
+    });
+    
+    mapService.calculateRoute(sitesWithData)
+      .then(route => {
+        setRouteInfo(route);
+      })
+      .catch(err => {
+        console.error('Erreur lors du calcul de l\'itinéraire:', err);
+        setError("Impossible de calculer l'itinéraire. Certaines coordonnées peuvent être manquantes.");
+      });
+  }, [sites, allSites]);
+  
+  // Mettre à jour les marqueurs et polylines lorsque la carte ou les sites changent
+  const updateMapElements = useCallback(() => {
+    if (!googleMapRef.current) return;
+    
+    const map = googleMapRef.current;
+    
+    // Effacer les marqueurs et polylines existants
+    markersRef.current.forEach(({ marker }) => marker.setMap(null));
+    polylinesRef.current.forEach(polyline => polyline.setMap(null));
+    
+    markersRef.current = [];
+    polylinesRef.current = [];
+    
+    // Ajouter les nouveaux marqueurs
+    sites.forEach((siteTournee, index) => {
+      const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+      const site = allSites[originalId];
+      
+      if (site && site.latitude && site.longitude) {
+        const isFirst = index === 0;
+        const isLast = index === sites.length - 1;
+        
+        const marker = new google.maps.Marker({
+          position: { lat: site.latitude, lng: site.longitude },
+          map,
+          title: site.nom,
+          label: {
+            text: String(index + 1),
+            color: '#FFFFFF',
+            fontWeight: 'bold'
+          },
+          icon: createMarkerIcon(index, isFirst, isLast),
+          zIndex: isFirst || isLast ? 1000 : 100
+        });
+        
+        // Ajouter une infowindow
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <h4 style="margin: 0 0 8px 0; color: #1976D2;">${site.nom}</h4>
+              <p style="margin: 4px 0;">${site.adresse}</p>
+              <p style="margin: 4px 0;">${site.codePostal} ${site.ville}</p>
+              <p style="margin: 8px 0 0 0; font-weight: bold;">
+                ${isFirst ? 'Départ' : isLast ? 'Arrivée' : `Étape ${index}`}
+              </p>
+            </div>
+          `
+        });
+        
+        marker.addListener('click', () => {
+          infoWindow.open(map, marker);
+        });
+        
+        markersRef.current.push({ marker, siteIndex: index, siteTournee });
+      }
+    });
+    
+    // Ajouter les polylines si routeInfo est disponible
+    if (routeInfo && routeInfo.routes) {
+      routeInfo.routes.forEach((route: any) => {
+        const polyline = new google.maps.Polyline({
+          path: route.points,
+          strokeColor: route.trafficColor || '#2196F3',
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+          map
+        });
+        
+        // Ajouter une infowindow sur clic sur la polyline
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div style="padding: 8px;">
+              <h4 style="margin: 0 0 5px 0;">Segment ${polylinesRef.current.length + 1}</h4>
+              <p style="margin: 2px 0;">Distance: ${(route.distance / 1000).toFixed(1)} km</p>
+              <p style="margin: 2px 0;">Durée: ${Math.round(route.duration / 60)} min</p>
+              ${route.trafficStatus ? `
+                <p style="margin: 2px 0; color: ${route.trafficColor || '#000'}">
+                  Trafic: ${
+                    route.trafficStatus === 'fluide' ? 'Fluide' : 
+                    route.trafficStatus === 'charge' ? 'Chargé' : 
+                    'Congestionné'
+                  }
+                </p>
+              ` : ''}
+            </div>
+          `
+        });
+        
+        polyline.addListener('click', (event: google.maps.MouseEvent) => {
+          infoWindow.setPosition(event.latLng);
+          infoWindow.open(map);
+        });
+        
+        polylinesRef.current.push(polyline);
+      });
+    }
+    
+    // Ajuster la vue pour inclure tous les marqueurs
+    if (markersRef.current.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      markersRef.current.forEach(({ marker }) => {
+        bounds.extend(marker.getPosition()!);
+      });
+      map.fitBounds(bounds);
+      
+      // Ajuster le zoom si un seul marqueur
+      if (markersRef.current.length === 1) {
+        map.setZoom(13);
+      }
+    }
+  }, [sites, allSites, routeInfo, createMarkerIcon]);
+  
+  // Gestionnaire pour le chargement de la carte
+  const handleMapLoad = useCallback((map: google.maps.Map) => {
+    googleMapRef.current = map;
+    updateMapElements();
+  }, [updateMapElements]);
+  
+  // Mettre à jour les éléments de la carte lorsque les sites ou les routes changent
+  useEffect(() => {
+    updateMapElements();
+  }, [sites, routeInfo, updateMapElements]);
+  
+  // Optimiser la tournée
+  const handleOptimizeTour = async () => {
+    if (sites.length < 3) return;
+    
+    setOptimizationLoading(true);
+    setError(null);
+    
+    try {
+      // Convertir les sites de la tournée en sites standard pour l'optimisation
+      const sitesForOptimization: Site[] = sites.map(siteTournee => {
+        const originalId = siteTournee.siteId || getOriginalSiteId(siteTournee.id);
+        return allSites[originalId];
+      }).filter(site => site && site.latitude && site.longitude);
+      
+      if (sitesForOptimization.length < sites.length) {
+        console.warn(`Certains sites ont été exclus de l'optimisation car ils n'ont pas de coordonnées valides`);
+      }
+      
+      if (sitesForOptimization.length < 2) {
+        throw new Error("Pas assez de sites avec des coordonnées valides pour optimiser la tournée");
+      }
+      
+      // Calculer l'ordre optimal
+      const optimization = await mapService.optimizeTour(sitesForOptimization);
+      
+      console.log("Résultat de l'optimisation:", optimization);
+      console.log("Nouvel ordre des sites:", optimization.sitesOrder);
+      
+      // Créer une correspondance entre les ID originaux et les ID uniques des sites dans la tournée
+      const siteIdToUniqueIdMap: Record<string, string> = {};
+      sites.forEach(site => {
+        const originalId = site.siteId || getOriginalSiteId(site.id);
+        siteIdToUniqueIdMap[originalId] = site.id;
+      });
+      
+      // Convertir les ID optimisés en ID uniques de la tournée
+      const optimizedUniqueIds = optimization.sitesOrder
+        .map(siteId => siteIdToUniqueIdMap[siteId])
+        .filter(id => id); // Filtrer les IDs non trouvés
+        
+      console.log("IDs uniques optimisés:", optimizedUniqueIds);
+      
+      // Appliquer le nouvel ordre
+      if (optimizedUniqueIds.length > 0) {
+        onOptimize(optimizedUniqueIds);
+      } else {
+        throw new Error("Impossible de mapper les IDs optimisés aux sites de la tournée");
+      }
+      
+      // Afficher un résumé de l'optimisation
+      const totalDistanceKm = (optimization.totalDistance / 1000).toFixed(1);
+      const totalDurationMin = Math.round(optimization.totalDuration / 60);
+      console.log(`Tournée optimisée: ${totalDistanceKm} km, ${totalDurationMin} minutes`);
+    } catch (err) {
+      console.error('Erreur lors de l\'optimisation de la tournée:', err);
+      setError("Impossible d'optimiser l'itinéraire. Veuillez vérifier que tous les sites ont des coordonnées valides.");
+    } finally {
+      setOptimizationLoading(false);
+    }
+  };
+  
+  // Calculer la distance et la durée totales
+  const routeSummary = React.useMemo(() => {
+    if (!routeInfo) return null;
+    
+    // Calculer la durée totale (en minutes) et la distance totale (en km)
+    const totalDuration = Math.round(routeInfo.duration / 60);
+    const totalDistance = (routeInfo.distance / 1000).toFixed(1);
+    
+    return { totalDuration, totalDistance };
+  }, [routeInfo]);
+
+  if (error) {
+    return (
+      <Paper sx={{ p: 2, height: '500px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Paper>
+    );
+  }
+
+  return (
+    <Paper sx={{ p: 2, position: 'relative' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <Typography variant="h6">Carte de la tournée</Typography>
+        <Button
+          variant="outlined"
+          startIcon={optimizationLoading ? <CircularProgress size={20} /> : <Autorenew />}
+          onClick={handleOptimizeTour}
+          disabled={optimizationLoading || sites.length < 3}
+        >
+          Optimiser la tournée
+        </Button>
+      </Box>
+      
+      {routeSummary && (
+        <Box sx={{ mb: 1, display: 'flex', gap: 2 }}>
+          <Typography variant="body2">
+            <strong>Distance totale:</strong> {routeSummary.totalDistance} km
+          </Typography>
+          <Typography variant="body2">
+            <strong>Durée estimée:</strong> {routeSummary.totalDuration} min
+          </Typography>
+        </Box>
+      )}
+      
+      <Box
+        sx={{
+          height: '450px',
+          width: '100%',
+          borderRadius: 1,
+          overflow: 'hidden'
+        }}
+      >
+        <GoogleMapComponent
+          center={mapCenter}
+          zoom={10}
+          onMapLoad={handleMapLoad}
+        >
+          {/* Le contenu sera géré via l'API Google Maps */}
+        </GoogleMapComponent>
+      </Box>
+    </Paper>
+  );
+};
+
+export default React.memo(MapView);

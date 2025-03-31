@@ -1,0 +1,1454 @@
+/* Styles spécifiques pour le composant Sites */
+.sites-table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 20px; /* Réduire l'espace pour remonter le tableau */
+}
+
+.selected-row {
+  background-color: #e3f2fd !important;
+}
+
+/* Nouveau style pour le tableau Sites */
+.sites-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 20px; /* Ajouter une marge en haut du tableau */
+  font-size: 13px;
+  table-layout: fixed !important; /* Fixer la largeur des colonnes */
+  box-sizing: border-box;
+}
+
+.sites-table th, 
+.sites-table td {
+  border: 1.5px solid #666666;
+  padding: 8px;
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+  position: relative;
+  box-sizing: border-box;
+  height: 40px; /* Hauteur fixe pour toutes les cellules */
+  vertical-align: middle; /* Centrer le contenu verticalement */
+}
+
+/* Assurer que les cellules de première ligne (checkbox) n'affectent pas l'alignement */
+.sites-table td:first-child,
+.sites-table th:first-child {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+}
+
+.sites-table th {
+  background-color: #0033a0;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8rem;
+  border-color: #333333;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  user-select: none; /* Empêcher la sélection de texte */
+}
+
+/* Style pour la poignée de redimensionnement des colonnes */
+.column-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.column-resizer:hover,
+.column-resizer.active {
+  background-color: rgba(33, 150, 243, 0.5);
+}
+
+/* Lorsqu'une colonne est en cours de redimensionnement */
+.sites-table.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.sites-table.resizing th {
+  transition: none;
+}
+
+/* Stylisation pour le selecteur de colonnes */
+.select-all-column {
+  width: 40px !important;
+  text-align: center !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+}
+
+.actions-column {
+  width: 80px;
+  text-align: center;
+}
+
+/* Surbrillance pour la cellule survolée */
+.sites-table td:hover {
+  white-space: normal;
+  overflow: visible;
+  z-index: 10;
+  background-color: #f0f8ff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+  height: auto;
+}
+
+/* S'assurer que la cellule d'action ne change pas l'affichage au survol */
+.sites-table td.action-cell:hover {
+  white-space: nowrap;
+  z-index: 11; /* Plus élevé que les autres cellules */
+}
+
+/* S'assurer que le contenu des cellules actions est toujours visible */
+.action-cell {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px !important;
+}
+
+/* Style pour les boutons d'action ressemblant à la capture d'écran */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.button i {
+  margin-right: 6px;
+}
+
+.button:hover {
+  opacity: 0.85;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background-color: #1976d2;
+  color: white;
+}
+
+.button-success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.button-secondary {
+  background-color: #757575;
+  color: white;
+}
+
+.button-warning {
+  background-color: #ff9800;
+  color: white;
+}
+
+.button-danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.button-info {
+  background-color: #2196f3;
+  color: white;
+}
+
+/* Alternance des couleurs de ligne */
+.sites-table tbody tr:nth-child(even) {
+  background-color: #f4f4f4;
+}
+
+.sites-table tbody tr:hover {
+  background-color: #e0e0e0;
+}
+
+/* Styles pour les champs en mode édition */
+.inline-edit-input,
+.inline-edit-select {
+  width: 100%;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.inline-edit-select {
+  height: 32px;
+}
+
+/* Amélioration de l'apparence des champs d'édition au focus */
+.inline-edit-input:focus,
+.inline-edit-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.25);
+  background-color: white;
+  z-index: 100;
+}
+
+/* Styles spécifiques quand le tableau est en mode édition */
+.data-table.editing td {
+  padding: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.data-table.editing tr {
+  height: 45px;
+}
+
+.data-table.editing .inline-edit-input:focus,
+.data-table.editing .inline-edit-select:focus {
+  transform: scale(1.05);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 13px;
+}
+
+/* Styles pour afficher le contenu qui dépasse en mode normal */
+.data-table td:hover {
+  white-space: normal;
+  overflow: visible;
+  z-index: 10;
+  background-color: #f0f8ff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour les nouveaux sites */
+.new-site-row {
+  background-color: #fff8e1 !important; /* Fond légèrement jaune */
+  animation: highlight 2s ease-in-out;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.7);
+  position: relative;
+}
+
+.sites-table thead th,
+.sites-table tbody td {
+  text-align: left;
+  padding: 8px;
+  border: 1.5px solid #666666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+/* Style pour la première colonne (checkbox) */
+.sites-table th:first-child,
+.sites-table td:first-child {
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  text-align: center !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+/* Style pour les étiquettes Nouveau */
+.new-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #ffc107;
+  color: #000;
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 0 0 4px 0;
+  font-weight: bold;
+  z-index: 999;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Animation de surbrillance pour les nouveaux sites */
+@keyframes highlight {
+  0% { background-color: #ffeb3b; }
+  100% { background-color: #fff8e1; }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 24px;
+  margin: 0;
+}
+
+.header-actions {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 101;
+  width: auto;
+}
+
+.edit-actions {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+/* Styles pour les boutons */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.button i {
+  margin-right: 6px;
+}
+
+.button:hover {
+  opacity: 0.85;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background-color: #1976d2;
+  color: white;
+}
+
+.button-primary:hover:not(:disabled) {
+  background-color: #43A047;
+}
+
+.button-secondary {
+  background-color: #757575;
+  color: white;
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: #1E88E5;
+}
+
+.button-warning {
+  background-color: #ff9800;
+  color: white;
+}
+
+.button-warning:hover:not(:disabled) {
+  background-color: #FB8C00;
+}
+
+.button-danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: #D5D5D5;
+}
+
+.button-info {
+  background-color: #2196f3;
+  color: white;
+}
+
+.button-info:hover:not(:disabled) {
+  background-color: #003B7A;
+}
+
+.geocoding-status {
+  font-style: italic;
+  color: #666;
+  padding: 10px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  border-left: 4px solid #2196f3;
+}
+
+.coordinates-display {
+  display: block;
+  padding: 4px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.coordinates-empty {
+  display: block;
+  color: #666;
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+.no-coordinates {
+  color: #999;
+  font-style: italic;
+}
+
+.coordinates-placeholder {
+  color: #999;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* Styles pour les en-têtes et actions fixes lors du défilement */
+.sticky-header-container {
+  position: fixed;
+  top: 130px;
+  right: 20px;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: none; /* Masquer cette version */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 300px;
+  max-width: 350px;
+}
+
+/* Style pour le conteneur de recherche et filtre */
+.quick-search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+.quick-search-input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 160px;
+  max-width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 120px;
+}
+
+.pole-filter {
+  min-width: 120px;
+  max-width: 100%;
+  flex: 0 0 auto;
+  height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.pole-filter-component {
+  height: 36px;
+}
+
+/* Groupe de boutons aligné à droite avec style similaire à la capture d'écran */
+.action-buttons-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  padding: 6px;
+  width: 100%;
+  min-width: auto;
+}
+
+/* Styles pour la page Sites */
+
+.sites-container {
+  position: relative;
+  width: 100%;
+}
+
+.action-button {
+  padding: 8px 15px;
+  border-radius: 4px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.action-button:hover {
+  background-color: #e0e0e0;
+}
+
+.action-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.edit-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.edit-button:hover {
+  background-color: #1976d2;
+}
+
+.cancel-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #d32f2f;
+}
+
+.save-button {
+  background-color: #4caf50;
+  color: white;
+  position: relative;
+}
+
+.save-button:hover {
+  background-color: #388e3c;
+}
+
+.delete-button {
+  background-color: #f44336;
+  color: white;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f;
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-left: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.quick-search-input:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.quick-search-input:disabled {
+  background-color: #e9e9e9;
+  cursor: not-allowed;
+}
+
+.error-message {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #ffebee;
+  border-radius: 4px;
+  border-left: 4px solid #f44336;
+  color: #d32f2f;
+  font-size: 14px;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(33, 150, 243, 0.3);
+  border-radius: 50%;
+  border-top-color: #2196f3;
+  animation: spin 1s ease-in-out infinite;
+}
+
+.loading-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Styles pour le tableau */
+.sites-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+.sites-table th,
+.sites-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.sites-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.sites-table input,
+.sites-table select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.sites-table input:focus,
+.sites-table select:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.checkbox-cell {
+  width: 40px !important;
+  text-align: center !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  padding: 0 !important;
+}
+
+.status-active {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.status-inactive {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.results-info {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Styles pour la pagination */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.items-per-page label {
+  font-size: 14px;
+  color: #333;
+}
+
+.items-per-page select {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.pagination-controls button {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.total-results {
+  font-size: 14px;
+  color: #666;
+}
+
+/* Style pour le texte trop long en mode lecture */
+.data-table:not(.editing) td:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
+  pointer-events: none;
+}
+
+/* Style spécifique pour les coordonnées */
+.coordinates-display {
+  white-space: nowrap;
+}
+
+/* Amélioration de l'apparence des formulaires en mode édition */
+.inline-edit-input:focus,
+.inline-edit-select:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.25), 0 5px 15px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  width: auto;
+  min-width: 100%;
+  z-index: 9999 !important; /* Valeur très élevée pour s'assurer qu'il passe devant tout */
+  background-color: white;
+  padding: 8px;
+  border-radius: 4px;
+  transform: translateY(-2px); /* Légère élévation pour effet 3D */
+}
+
+/* Style pour le texte trop long en mode lecture */
+.data-table:not(.editing) td:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1));
+  pointer-events: none;
+}
+
+/* Popup d'édition plus élégant */
+.data-table.editing td {
+  padding: 5px;
+}
+
+.data-table.editing .inline-edit-input,
+.data-table.editing .inline-edit-select {
+  transition: all 0.2s ease;
+}
+
+.data-table.editing .inline-edit-input:focus,
+.data-table.editing .inline-edit-select:focus {
+  transform: scale(1.05);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 13px;
+}
+
+/* Assurer que toutes les cellules ont la même hauteur */
+.data-table.editing tr {
+  height: 45px;
+}
+
+/* Ajuster la taille des inputs pour qu'ils s'adaptent parfaitement */
+.data-table.editing .inline-edit-input,
+.data-table.editing .inline-edit-select {
+  box-sizing: border-box;
+  height: 32px;
+}
+
+/* Ajuster les marges en mode édition */
+.sites-table-container {
+  margin-top: 70px;
+}
+
+/* Améliorer l'apparence du tableau pour un aspect plus professionnel */
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+/* Bouton pour supprimer une nouvelle ligne */
+.remove-button {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+  transition: all 0.2s ease;
+}
+
+.remove-button:hover {
+  background-color: #ff1744;
+  transform: scale(1.1);
+}
+
+.remove-button i {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.search-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.search-bar {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.pole-filter {
+  min-width: 180px;
+  max-width: 220px;
+}
+
+.pole-filter .MuiInputBase-root {
+  height: 30px;
+}
+
+.pole-filter .MuiSelect-select {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.pole-filter-component {
+  width: 100%;
+}
+
+/* Style pour le filtre de pôle */
+.pole-filter {
+  min-width: 200px;
+}
+
+/* Styles pour les boutons d'action dans la colonne Actions */
+.action-cell {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px !important;
+  white-space: nowrap;
+}
+
+.action-button {
+  background-color: transparent;
+  color: #666;
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  width: 32px;
+  height: 32px;
+}
+
+.action-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #333;
+}
+
+.action-button i {
+  font-size: 18px;
+}
+
+.action-button.delete-button:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.actions-column {
+  width: 100px;
+  text-align: center;
+  min-width: 100px;
+}
+
+/* Styles pour le dialogue de colonnes */
+.MuiDialog-paper {
+  overflow-y: visible !important;
+}
+
+.MuiDialogTitle-root h6 {
+  font-weight: 600;
+  color: #0033a0;
+}
+
+.MuiListItem-dense {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  cursor: pointer;
+}
+
+.MuiCheckbox-root {
+  padding: 6px !important;
+}
+
+/* S'assurer que le dialogue est bien visible sur la page */
+.MuiDialogContent-root {
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+}
+
+/* Style pour indiquer quand une colonne est masquée */
+.column-hidden {
+  color: #999;
+  text-decoration: line-through;
+}
+
+/* Améliorer l'interface du dialogue de colonnes */
+.MuiDialogContent-root {
+  max-height: 60vh !important;
+  overflow-y: auto !important;
+}
+
+.MuiListItem-dense {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  cursor: pointer;
+}
+
+.MuiCheckbox-root {
+  padding: 6px !important;
+}
+
+/* Augmenter la zone cliquable pour les cases à cocher */
+.MuiListItem-button {
+  display: flex;
+  width: 100%;
+}
+
+/* Styles spécifiques pour Material-UI */
+.MuiListItem-root {
+  width: 100% !important;
+}
+
+.MuiCheckbox-root {
+  color: #0033a0 !important;
+}
+
+.MuiDialogContent-root .MuiListItem-root:hover {
+  background-color: rgba(0, 51, 160, 0.05);
+}
+
+/* Style pour les boutons du dialogue */
+.MuiButton-root {
+  min-width: 120px !important;
+  font-weight: 500 !important;
+}
+
+/* Augmenter la taille du dialogue */
+.MuiDialog-paper {
+  min-width: 400px !important;
+}
+
+/* S'assurer que le header du dialogue est bien visible */
+.MuiDialogTitle-root {
+  background-color: #f5f5f5;
+  padding: 16px 24px !important;
+}
+
+@media (max-width: 768px) {
+  .sticky-header-container {
+    position: fixed;
+    width: calc(100% - 40px);
+    top: 100px;
+    right: 20px;
+    flex-direction: column;
+    max-width: none;
+  }
+  
+  .action-buttons-group {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
+  .quick-search-container {
+    width: 100%;
+  }
+  
+  .button {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sticky-header-container {
+    width: calc(100% - 20px);
+    right: 10px;
+    padding: 10px;
+  }
+  
+  .button {
+    min-width: 60px;
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .quick-search-input {
+    width: 100%;
+  }
+  
+  .pole-filter {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Assurer que les conteneurs s'adaptent bien aux petits écrans */
+.sticky-header-container {
+  width: calc(100% - 40px);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Rendre les boutons plus visibles en mode édition */
+.edit-mode-toggle {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-mode-toggle.active {
+  background-color: #F44336;
+}
+
+/* Ajout des styles pour le dialogue de colonnes */
+.column-visible {
+  font-weight: bold;
+  color: #333;
+}
+
+.column-hidden {
+  color: #999;
+  font-style: italic;
+}
+
+/* Style pour la configuration des colonnes */
+.action-buttons-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.button-info {
+  background-color: #2196F3;
+  color: white;
+}
+
+.button-warning {
+  background-color: #FF9800;
+  color: white;
+}
+
+.button-primary {
+  background-color: #1976d2;
+  color: white;
+}
+
+.button-success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.button-secondary {
+  background-color: #9e9e9e;
+  color: white;
+}
+
+.button-danger {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Style pour les tableaux */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.data-table th {
+  background-color: #f5f5f5;
+  padding: 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #ddd;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.data-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.selected-row:hover {
+  background-color: #bbdefb !important;
+}
+
+/* Style pour les popups de dialogue */
+.MuiDialog-paper {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.MuiDialogTitle-root {
+  background-color: #f5f5f5;
+  padding: 16px 24px !important;
+}
+
+.MuiDialogContent-root {
+  padding: 16px 24px !important;
+}
+
+.MuiDialogActions-root {
+  padding: 8px 24px 16px !important;
+}
+
+.MuiListItem-button:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Style pour les inputs dans les tableaux */
+.sites-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Ajout de style pour la case checkbox */
+.checkbox-cell {
+  width: 40px !important;
+  text-align: center !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  padding: 0 !important;
+}
+
+/* Assurer la compatibilité avec le mode édition */
+.sites-table.editing td {
+  padding: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Améliorer l'affichage des select */
+.sites-table.editing select.inline-edit-select {
+  width: 100%;
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: menulist;
+}
+
+/* S'assurer que les contrôles d'édition sont bien affichés */
+.sites-table td {
+  position: relative;
+}
+
+/* Positionnement absolu des champs au focus pour qu'ils restent visibles */
+.sites-table.editing td:focus-within .inline-edit-input,
+.sites-table.editing td:focus-within .inline-edit-select {
+  position: absolute;
+  width: auto;
+  min-width: 100%;
+  padding: 8px;
+  z-index: 1000;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+  left: 0;
+  top: -5px;
+}
+
+/* Style spécifique pour les select */
+.sites-table.editing select.inline-edit-select {
+  height: 30px;
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+  appearance: menulist;
+}
+
+/* Style pour les cellules en mode édition */
+.sites-table.editing td {
+  padding: 5px;
+  position: relative;
+  z-index: 1;
+  vertical-align: middle;
+  height: 40px;
+}
+
+/* Style pour les lignes en mode édition */
+.sites-table.editing tr {
+  height: 40px;
+}
+
+/* Ajustement pour le mode édition */
+.sticky-header-container .action-buttons-group {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 380px;
+}
+
+@media (max-width: 768px) {
+  .sticky-header-container {
+    position: fixed;
+    width: calc(100% - 40px);
+    top: 80px;
+    right: 20px;
+    flex-direction: column;
+  }
+  
+  .quick-search-container {
+    width: 100%;
+  }
+  
+  .action-buttons-group {
+    width: 100%;
+  }
+}
+
+/* Style spécifique pour le mode édition */
+.data-table.editing, .sites-table.editing {
+  z-index: 1;
+  position: relative;
+}
+
+.data-table.editing td, .sites-table.editing td {
+  background-color: #fcfcfc;
+  z-index: 2;
+}
+
+.data-table.editing .inline-edit-input, 
+.data-table.editing .inline-edit-select,
+.sites-table.editing .inline-edit-input,
+.sites-table.editing .inline-edit-select {
+  z-index: 5;
+  position: relative;
+}
+
+/* Assurer la visibilité des menus déroulants en édition */
+.inline-edit-select {
+  appearance: menulist;
+  background-image: none;
+}
+
+/* S'assurer que tous les selects sont visibles même avec z-index élevé */
+.sites-table.editing select,
+.data-table.editing select,
+.inline-edit-select {
+  z-index: 10;
+  background-color: white;
+  position: relative;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 5px;
+  min-height: 30px;
+  appearance: menulist !important;
+  -webkit-appearance: menulist !important;
+  -moz-appearance: menulist !important;
+}
+
+.editing .inline-edit-select:focus {
+  z-index: 999;
+  box-shadow: 0 0 8px rgba(25, 118, 210, 0.5);
+  border: 1px solid #1976d2;
+}
+
+/* Option alternative pour avoir le sticky header en haut */
+.sticky-header-top {
+  position: sticky;
+  top: 50px; /* Laisser de l'espace pour la navbar */
+  left: 0;
+  right: 0;
+  z-index: 90;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 8px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 15px;
+  margin-top: 10px; /* Ajouter un espace en haut */
+}
+
+.sticky-header-top .action-buttons-group {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  margin-right: 15px;
+  background-color: transparent;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sticky-header-top .quick-search-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  flex: 1 1 auto;
+  max-width: 400px;
+  min-width: 0;
+  margin-left: 0;
+}
+
+/* Options pour le sticky-header original (en position droite) */
+.sticky-header-container {
+  position: fixed;
+  top: 130px;
+  right: 20px;
+  z-index: 100;
+  background-color: rgba(255, 255, 255, 0.5);
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  display: none; /* Masquer cette version */
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: auto;
+  min-width: 300px;
+  max-width: 350px;
+}
+
+@media screen and (max-width: 768px) {
+  .sticky-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .sticky-header-top .action-buttons-group,
+  .sticky-header-top .quick-search-container {
+    width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+    max-width: none;
+  }
+  
+  .sticky-header-top .quick-search-container {
+    margin-top: 8px;
+  }
+} 

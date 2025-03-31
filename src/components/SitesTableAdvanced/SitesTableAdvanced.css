@@ -1,0 +1,342 @@
+/* Styles pour le tableau avancé des sites */
+
+.sites-table-advanced {
+  width: 100%;
+  margin-bottom: 2rem;
+  height: 100%;
+}
+
+/* Barre d'outils du tableau */
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.search-filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-input {
+  min-width: 250px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Conteneur du tableau */
+.table-container {
+  margin-top: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.scrollable-table {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* En-têtes de tableau */
+.table-header-cell {
+  font-weight: 600;
+  background-color: #f5f5f5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  white-space: nowrap;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+/* Cellules du tableau */
+.site-cell {
+  padding: 12px 16px;
+  vertical-align: middle;
+  white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.site-cell-content {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.site-cell-expandable:hover {
+  overflow: visible;
+  white-space: normal;
+  max-width: none;
+  position: relative;
+  z-index: 1;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+.action-cell {
+  white-space: nowrap;
+  padding: 8px;
+}
+
+/* Ligne de site */
+.site-row {
+  transition: background-color 0.2s;
+}
+
+.site-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.site-row.selected {
+  background-color: rgba(25, 118, 210, 0.08);
+}
+
+/* Nouvelles lignes */
+.new-site-row {
+  background-color: rgba(76, 175, 80, 0.08);
+}
+
+.new-site-cell {
+  padding: 8px 16px;
+}
+
+/* Pied de tableau */
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.rows-per-page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-count {
+  white-space: nowrap;
+}
+
+/* Chips et containers */
+.chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 300px;
+}
+
+.site-chip {
+  margin: 2px;
+}
+
+.filter-chip {
+  margin: 4px;
+}
+
+.empty-field {
+  color: #999;
+  font-style: italic;
+}
+
+/* Dialogues */
+.column-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.column-list-item {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+}
+
+.drag-handle {
+  cursor: move;
+  margin-right: 8px;
+  color: #999;
+}
+
+.columns-dialog-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Filtres actifs */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.filter-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-count-chip {
+  font-weight: normal;
+}
+
+/* Boîte de dialogue de confirmation */
+.confirm-dialog-title {
+  color: #f44336;
+}
+
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Alerte de géocodage */
+.geocoding-alert {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.alert-progress {
+  margin-left: 16px;
+}
+
+/* Styling des champs input dans le tableau pour une meilleure visibilité */
+.site-cell input, .site-cell select {
+  min-width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.site-cell input:focus, .site-cell select:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+  outline: none;
+}
+
+/* Améliorer la visibilité de l'état de sélection */
+.Mui-selected {
+  background-color: rgba(25, 118, 210, 0.15) !important;
+}
+
+/* Optimisations de performance */
+.MuiTableCell-root {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Responsivité améliorée */
+@media (max-width: 960px) {
+  .table-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .search-filter-container, .action-buttons {
+    width: 100%;
+    margin-bottom: 8px;
+    justify-content: flex-start;
+  }
+  
+  .table-footer {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .scrollable-table {
+    max-height: 80vh;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+}
+
+.highlight-row {
+  animation: pulse 1.5s infinite;
+}
+
+/* Améliorer l'affichage sur les grands écrans */
+@media (min-width: 1200px) {
+  .scrollable-table {
+    max-height: 80vh;
+  }
+  
+  .sites-table-advanced {
+    padding: 0;
+  }
+}
+
+/* Styles pour les champs d'entrée dans les nouvelles lignes */
+.new-site-input {
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.new-site-input:focus {
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* Style pour le bouton de suppression */
+.delete-button {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.delete-button:hover {
+  opacity: 1;
+  color: #f44336;
+}
+
+/* Optimisations supplémentaires de performance */
+.table-container, .scrollable-table {
+  contain: content;
+}
+
+.site-row, .new-site-row {
+  contain: layout style;
+}
+
+/* Amélioration du rendu des champs */
+.MuiInputBase-root {
+  background-color: white;
+}
+
+/* Amélioration de la réactivité au scroll */
+@media (min-width: 1200px) {
+  .scrollable-table {
+    max-height: calc(100vh - 250px);
+  }
+} 
